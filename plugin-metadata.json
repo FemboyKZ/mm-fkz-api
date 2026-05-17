@@ -4,7 +4,7 @@
     "display_name": "MM CS2KZ Realtime Status",
     "description": "Reports server/player/CS2KZ data to API via HTTP",
     "author": "jvnipers",
-    "url": "https://github.com/FemboyKZ/mm-realtime-status",
+    "url": "https://github.com/FemboyKZ/cs2kz-realtime-status",
     "log_tag": "MM-RTS",
     "license": "AGPL-3.0",
     "version": "1.0.8"

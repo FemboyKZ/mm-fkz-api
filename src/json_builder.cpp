@@ -103,7 +103,7 @@ static std::string BuildPluginsJson() {
 }
 
 // Resolves IP from config or hostip convar
-static void ResolveIpPort(char *ip, int ipLen, int &port) {
+void ResolveIpPort(char *ip, int ipLen, int &port) {
   if (g_Config.serverIp[0] != '\0') {
     strncpy(ip, g_Config.serverIp, ipLen - 1);
     ip[ipLen - 1] = '\0';

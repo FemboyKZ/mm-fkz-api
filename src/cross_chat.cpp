@@ -1,0 +1,244 @@
+/**
+ * FKZ API - Cross-server chat (CS2)
+ *
+ * See cross_chat.h. Capture path hooks the engine's say dispatch. Receive path
+ * keeps one long-poll open against the API and prints incoming lines.
+ */
+
+#include <cstdio>
+#include <cstring>
+#include <string>
+
+#include "config.h"
+#include "cross_chat.h"
+#include "globals.h"
+#include "http_client.h"
+#include "json_builder.h"
+#include "player_manager.h"
+#include "plugin.h"
+
+#include <engine/igameeventsystem.h>
+#include <irecipientfilter.h>
+#include <networksystem/inetworkmessages.h>
+#include <tier0/platform.h>
+
+#include "thirdparty/nlohmann/json.hpp"
+#include "usermessages.pb.h"
+
+// CS2 chat color control bytes (from cs2kz's color table).
+#define CHAT_DEFAULT "\x01"
+#define CHAT_ORCHID "\x0E"
+
+#define CHAT_RETRY_SECONDS 3.0
+#define CHAT_STREAM_TIMEOUT_SECONDS 60 // > the API's ~25s park window
+
+static int g_chatCursor = -1;  // last relay id seen (-1 = needs handshake)
+static bool g_streamActive;    // a long-poll request is in flight
+static double g_nextRetryTime; // earliest time to (re)open the stream
+static bool g_muted[MAXPLAYERS + 1];
+
+// Routes a message to a fixed set of player slots.
+class CChatRecipientFilter : public IRecipientFilter {
+public:
+  NetChannelBufType_t GetNetworkBufType() const override {
+    return BUF_RELIABLE;
+  }
+  bool IsInitMessage() const override { return false; }
+  const CPlayerBitVec &GetRecipients() const override { return m_recipients; }
+  CPlayerSlot GetPredictedPlayerSlot() const override {
+    return CPlayerSlot(-1);
+  }
+
+  void AddRecipient(int slot) {
+    if (slot >= 0 && slot < ABSOLUTE_PLAYER_LIMIT)
+      m_recipients.Set(slot);
+  }
+  bool Empty() const { return m_recipients.IsAllClear(); }
+
+private:
+  CPlayerBitVec m_recipients;
+};
+
+// Sends a single chat line (SayText2) to everyone in the filter.
+static void SendSayText2(const CChatRecipientFilter &filter, const char *line) {
+  if (!g_pNetworkMessages || !g_pGameEventSystem || filter.Empty())
+    return;
+
+  INetworkMessageInternal *netmsg =
+      g_pNetworkMessages->FindNetworkMessagePartial("SayText2");
+  if (!netmsg)
+    return;
+
+  auto msg = netmsg->AllocateMessage()->ToPB<CUserMessageSayText2>();
+  msg->set_entityindex(-1);
+  msg->set_chat(false);
+  msg->set_messagename(line);
+
+  g_pGameEventSystem->PostEventAbstract(
+      0, false, const_cast<CChatRecipientFilter *>(&filter), netmsg, msg, 0);
+  delete msg;
+}
+
+static void PrintCrossChat(const char *alias, const char *name,
+                           const char *message) {
+  CChatRecipientFilter filter;
+  for (int slot = 0; slot < MAXPLAYERS; slot++) {
+    const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+    if (p.connected && p.inGame && !p.isBot && !g_muted[slot])
+      filter.AddRecipient(slot);
+  }
+
+  char line[512];
+  snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s: %s",
+           alias, name, message);
+  SendSayText2(filter, line);
+}
+
+static void NotifyMuteState(int slot, bool muted) {
+  CChatRecipientFilter filter;
+  filter.AddRecipient(slot);
+  if (muted)
+    SendSayText2(filter,
+                 " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT
+                 " Cross-server messages hidden. Type !crosschat to show.");
+  else
+    SendSayText2(filter, " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT
+                         " Cross-server messages shown.");
+}
+
+// ---- Send ------------------------------------------------------------------
+
+static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/,
+                       uint32 /*len*/, void * /*data*/) {
+  if (statusCode != 200 && statusCode != 0)
+    META_CONPRINTF("[FKZ] chat POST returned HTTP %d\n", statusCode);
+}
+
+void CrossChat_OnDispatchConCommand(ConCommandRef cmd,
+                                    const CCommandContext &ctx,
+                                    const CCommand &args) {
+  if (g_Config.apiUrl[0] == '\0' || !cmd.IsValidRef())
+    return;
+
+  // Public chat only; team chat stays local.
+  if (V_stricmp(cmd.GetName(), "say") != 0 || args.ArgC() < 2)
+    return;
+
+  int slot = ctx.GetPlayerSlot().Get();
+  if (slot < 0 || slot >= MAXPLAYERS)
+    return;
+
+  const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+  if (!p.connected || p.isBot)
+    return;
+
+  // args.ArgS() is the remainder after "say", usually wrapped in quotes.
+  const char *raw = args.ArgS();
+  if (!raw)
+    return;
+  std::string text = raw;
+  if (text.size() >= 2 && text.front() == '"' && text.back() == '"')
+    text = text.substr(1, text.size() - 2);
+
+  // Replace CS2's zero-width-space quote artifact with a real quote.
+  size_t pos = 0;
+  while ((pos = text.find("\xE2\x80\x8B", pos)) != std::string::npos)
+    text.replace(pos, 3, "\"");
+
+  // Trim leading whitespace.
+  size_t begin = text.find_first_not_of(" \t");
+  if (begin == std::string::npos)
+    return;
+  text = text.substr(begin);
+  if (text.empty())
+    return;
+
+  // Mute toggle.
+  if (V_stricmp(text.c_str(), "!crosschat") == 0 ||
+      V_stricmp(text.c_str(), "/crosschat") == 0) {
+    g_muted[slot] = !g_muted[slot];
+    NotifyMuteState(slot, g_muted[slot]);
+    return;
+  }
+
+  // Other command triggers are not relayed.
+  if (text[0] == '!' || text[0] == '/')
+    return;
+
+  char ip[64];
+  int port;
+  ResolveIpPort(ip, sizeof(ip), port);
+
+  char steamId[32];
+  snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p.steamId64);
+
+  std::string body = "{\"ip\":\"" + JsonEscape(ip) +
+                     "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" +
+                     steamId + "\",\"name\":\"" + JsonEscape(p.name) +
+                     "\",\"message\":\"" + JsonEscape(text.c_str()) + "\"}";
+
+  std::string url = std::string(g_Config.apiUrl) + "/chat/messages";
+  g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost,
+                       nullptr);
+}
+
+static void OnChatStream(bool /*success*/, int statusCode, const char *body,
+                         uint32 /*len*/, void * /*data*/) {
+  g_streamActive = false;
+
+  if (statusCode != 200) {
+    g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
+    return;
+  }
+
+  if (body && body[0] != '\0') {
+    nlohmann::json doc = nlohmann::json::parse(body, nullptr, false);
+    if (doc.is_object()) {
+      int cursor = doc.value("cursor", g_chatCursor);
+      if (cursor >= g_chatCursor)
+        g_chatCursor = cursor;
+
+      auto msgs = doc.find("messages");
+      if (msgs != doc.end() && msgs->is_array()) {
+        for (const auto &m : *msgs) {
+          if (!m.is_object())
+            continue;
+          std::string alias = m.value("alias", std::string());
+          std::string name = m.value("name", std::string());
+          std::string message = m.value("message", std::string());
+          PrintCrossChat(alias.c_str(), name.c_str(), message.c_str());
+        }
+      }
+    }
+  }
+  // CrossChat_Tick re-opens the poll on the next game frame.
+}
+
+static void StartChatStream() {
+  char ip[64];
+  int port;
+  ResolveIpPort(ip, sizeof(ip), port);
+
+  char url[1024];
+  snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d",
+           g_Config.apiUrl, g_chatCursor, ip, port);
+
+  if (g_HttpClient.Request("GET", url, nullptr, CHAT_STREAM_TIMEOUT_SECONDS,
+                           OnChatStream, nullptr))
+    g_streamActive = true;
+  else
+    g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
+}
+
+void CrossChat_Tick(bool hasHumans) {
+  if (g_Config.apiUrl[0] == '\0' || !hasHumans || g_streamActive)
+    return;
+  if (Plat_FloatTime() < g_nextRetryTime)
+    return;
+  StartChatStream();
+}
+
+void CrossChat_OnClientDisconnect(int slot) {
+  if (slot >= 0 && slot <= MAXPLAYERS)
+    g_muted[slot] = false;
+}

@@ -10,7 +10,7 @@
 #include "version_gen.h"
 #include <ISmmPlugin.h>
 #include <iserver.h>
-
+#include <tier1/convar.h>
 
 class MMSPlugin : public ISmmPlugin, public IMetamodListener {
 public:
@@ -35,6 +35,8 @@ public:
   void Hook_StartupServer(const GameSessionConfiguration_t &config,
                           ISource2WorldSession *, const char *);
   void Hook_ServerHibernationUpdate(bool bHibernating);
+  void Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx,
+                               const CCommand &args);
 
 public:
   const char *GetAuthor() { return PLUGIN_AUTHOR; }

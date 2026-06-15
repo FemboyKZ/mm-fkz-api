@@ -8,6 +8,7 @@
 #include "plugin.h"
 #include "api.h"
 #include "config.h"
+#include "cross_chat.h"
 #include "globals.h"
 #include "http_client.h"
 #include "json_builder.h"
@@ -18,7 +19,10 @@
 #include <ISmmAPI.h>
 #include <cstring>
 #include <eiface.h>
+#include <engine/igameeventsystem.h>
+#include <icvar.h>
 #include <iserver.h>
+#include <networksystem/inetworkmessages.h>
 #include <tier0/platform.h>
 
 class GameSessionConfiguration_t {};
@@ -40,6 +44,8 @@ SH_DECL_HOOK6_void(ISource2GameClients, OnClientConnected, SH_NOATTRIB, 0,
 SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0,
                    const GameSessionConfiguration_t &, ISource2WorldSession *,
                    const char *);
+SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandRef,
+                   const CCommandContext &, const CCommand &);
 
 bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen,
                      bool late) {
@@ -58,6 +64,10 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen,
   GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService,
                       INetworkServerService,
                       NETWORKSERVERSERVICE_INTERFACE_VERSION);
+  GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkMessages, INetworkMessages,
+                      NETWORKMESSAGES_INTERFACE_VERSION);
+  GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem,
+                      GAMEEVENTSYSTEM_INTERFACE_VERSION);
 
   g_PlayerManager.Reset();
   m_lastReportTime = 0.0;
@@ -90,6 +100,8 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen,
   SH_ADD_HOOK_MEMFUNC(INetworkServerService, StartupServer,
                       g_pNetworkServerService, this,
                       &MMSPlugin::Hook_StartupServer, true);
+  SH_ADD_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this,
+                      &MMSPlugin::Hook_DispatchConCommand, false);
 
   // Late load: server is already running
   if (late) {
@@ -121,6 +133,8 @@ bool MMSPlugin::Unload(char *error, size_t maxlen) {
   SH_REMOVE_HOOK_MEMFUNC(INetworkServerService, StartupServer,
                          g_pNetworkServerService, this,
                          &MMSPlugin::Hook_StartupServer, true);
+  SH_REMOVE_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this,
+                         &MMSPlugin::Hook_DispatchConCommand, false);
 
   g_HttpClient.ReleasePending();
 
@@ -182,6 +196,7 @@ void MMSPlugin::Hook_ClientDisconnect(CPlayerSlot slot,
   bool wasFakeClient = g_PlayerManager.GetPlayer(s).isBot;
 
   g_PlayerManager.OnClientDisconnect(s);
+  CrossChat_OnClientDisconnect(s);
 
   // Send hibernate signal when last human player leaves
   if (!wasFakeClient && g_PlayerManager.GetHumanPlayerCount() == 0 &&
@@ -209,8 +224,13 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick,
   if (g_Config.apiUrl[0] == '\0')
     return;
 
+  int humans = g_PlayerManager.GetHumanPlayerCount();
+
+  // Keep the cross-chat long-poll open while players are present.
+  CrossChat_Tick(humans > 0);
+
   // Don't report while idle (no human players / server hibernating).
-  if (g_PlayerManager.GetHumanPlayerCount() == 0)
+  if (humans == 0)
     return;
 
   double now = Plat_FloatTime();
@@ -218,4 +238,11 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick,
     m_lastReportTime = now;
     SendReport();
   }
+}
+
+void MMSPlugin::Hook_DispatchConCommand(ConCommandRef cmd,
+                                        const CCommandContext &ctx,
+                                        const CCommand &args) {
+  CrossChat_OnDispatchConCommand(cmd, ctx, args);
+  RETURN_META(MRES_IGNORED);
 }

@@ -93,7 +93,7 @@ static void PrintCrossChat(const char *alias, const char *name,
       filter.AddRecipient(slot);
   }
 
-  char line[512];
+  char line[768]; // fits [alias<=64] name<=64: message<=512 + control bytes
   snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s: %s",
            alias, name, message);
   SendChatLine(filter, line);
@@ -199,9 +199,10 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body,
   if (body && body[0] != '\0') {
     nlohmann::json doc = nlohmann::json::parse(body, nullptr, false);
     if (doc.is_object()) {
-      int cursor = doc.value("cursor", g_chatCursor);
-      if (cursor >= g_chatCursor)
-        g_chatCursor = cursor;
+      // Trust the server's cursor (only one poll is ever in flight, so replies
+      // arrive in order). Adopting it unconditionally lets us recover if the
+      // API restarted and reset its cursor below ours.
+      g_chatCursor = doc.value("cursor", g_chatCursor);
 
       auto msgs = doc.find("messages");
       if (msgs != doc.end() && msgs->is_array()) {

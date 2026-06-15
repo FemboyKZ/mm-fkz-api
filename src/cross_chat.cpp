@@ -29,6 +29,8 @@
 #define CHAT_DEFAULT "\x01"
 #define CHAT_ORCHID "\x0E"
 
+#define HUD_PRINTTALK 3 // TextMsg destination: the chat area
+
 #define CHAT_RETRY_SECONDS 3.0
 #define CHAT_STREAM_TIMEOUT_SECONDS 60 // > the API's ~25s park window
 
@@ -59,20 +61,23 @@ private:
   CPlayerBitVec m_recipients;
 };
 
-// Sends a single chat line (SayText2) to everyone in the filter.
-static void SendSayText2(const CChatRecipientFilter &filter, const char *line) {
+// Prints a chat line to everyone in the filter. Uses TextMsg/HUD_PRINTTALK
+static void SendChatLine(const CChatRecipientFilter &filter, const char *line) {
   if (!g_pNetworkMessages || !g_pGameEventSystem || filter.Empty())
     return;
 
   INetworkMessageInternal *netmsg =
-      g_pNetworkMessages->FindNetworkMessagePartial("SayText2");
+      g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
   if (!netmsg)
     return;
 
-  auto msg = netmsg->AllocateMessage()->ToPB<CUserMessageSayText2>();
-  msg->set_entityindex(-1);
-  msg->set_chat(false);
-  msg->set_messagename(line);
+  auto msg = netmsg->AllocateMessage()->ToPB<CUserMessageTextMsg>();
+  msg->set_dest(HUD_PRINTTALK);
+  msg->add_param(line); // param[0] is the text, control bytes give color
+  msg->add_param("");
+  msg->add_param("");
+  msg->add_param("");
+  msg->add_param("");
 
   g_pGameEventSystem->PostEventAbstract(
       0, false, const_cast<CChatRecipientFilter *>(&filter), netmsg, msg, 0);
@@ -91,18 +96,18 @@ static void PrintCrossChat(const char *alias, const char *name,
   char line[512];
   snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s: %s",
            alias, name, message);
-  SendSayText2(filter, line);
+  SendChatLine(filter, line);
 }
 
 static void NotifyMuteState(int slot, bool muted) {
   CChatRecipientFilter filter;
   filter.AddRecipient(slot);
   if (muted)
-    SendSayText2(filter,
+    SendChatLine(filter,
                  " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT
                  " Cross-server messages hidden. Type !crosschat to show.");
   else
-    SendSayText2(filter, " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT
+    SendChatLine(filter, " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT
                          " Cross-server messages shown.");
 }
 

@@ -1,27 +1,34 @@
-# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python: 
+# vim: set sts=2 ts=8 sw=2 tw=99 et ft=python:
 import os
 
 for sdk_target in MMSPlugin.sdk_targets:
-  sdk = sdk_target.sdk
-  cxx = sdk_target.cxx
+    sdk = sdk_target.sdk
+    cxx = sdk_target.cxx
 
-  binary = MMSPlugin.HL2Library(builder, cxx, f'{MMSPlugin.metadata["name"]}.{sdk["name"]}', sdk)
+    binary = MMSPlugin.HL2Library(
+        builder, cxx, f'{MMSPlugin.metadata["name"]}.{sdk["name"]}', sdk
+    )
 
-  binary.sources += [
-    'src/plugin.cpp',
-    'src/globals.cpp',
-    'src/config.cpp',
-    'src/player_manager.cpp',
-    'src/server_info.cpp',
-    'src/http_client.cpp',
-    'src/json_builder.cpp',
-    'src/reporter.cpp',
-    'src/api.cpp',
-  ]
+    binary.sources += [
+        "src/plugin.cpp",
+        "src/globals.cpp",
+        "src/config.cpp",
+        "src/player_manager.cpp",
+        "src/server_info.cpp",
+        "src/http_client.cpp",
+        "src/json_builder.cpp",
+        "src/reporter.cpp",
+        "src/api.cpp",
+    ]
 
-  binary.custom = [builder.tools.Protoc(protoc = sdk_target.protoc, sources = [
-    os.path.join(sdk['path'], 'common', 'network_connection.proto'),
-  ])]
+    binary.custom = [
+        builder.tools.Protoc(
+            protoc=sdk_target.protoc,
+            sources=[
+                os.path.join(sdk["path"], "common", "network_connection.proto"),
+            ],
+        )
+    ]
 
-  nodes = builder.Add(binary)
-  MMSPlugin.binaries += [nodes]
+    nodes = builder.Add(binary)
+    MMSPlugin.binaries += [nodes]

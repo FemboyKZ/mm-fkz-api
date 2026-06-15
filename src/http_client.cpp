@@ -49,11 +49,11 @@ void HttpClient::Post(const char *url, const std::string &body, uint32 timeoutSe
 		pHTTP = m_steamAPI.SteamHTTP();
 		if (!pHTTP)
 		{
-			META_CONPRINTF("[MM-RTS] Steam HTTP not available, skipping request to %s\n", url);
+			META_CONPRINTF("[FKZ] Steam HTTP not available, skipping request to %s\n", url);
 			return;
 		}
 		m_ready = true;
-		META_CONPRINTF("[MM-RTS] Steam API recovered\n");
+		META_CONPRINTF("[FKZ] Steam API recovered\n");
 	}
 
 	// Cancel any pending request
@@ -66,7 +66,7 @@ void HttpClient::Post(const char *url, const std::string &body, uint32 timeoutSe
 	HTTPRequestHandle req = pHTTP->CreateHTTPRequest(k_EHTTPMethodPOST, url);
 	if (req == INVALID_HTTPREQUEST_HANDLE)
 	{
-		META_CONPRINTF("[MM-RTS] Failed to create HTTP request to %s\n", url);
+		META_CONPRINTF("[FKZ] Failed to create HTTP request to %s\n", url);
 		return;
 	}
 
@@ -86,7 +86,7 @@ void HttpClient::Post(const char *url, const std::string &body, uint32 timeoutSe
 	SteamAPICall_t hCall;
 	if (!pHTTP->SendHTTPRequest(req, &hCall))
 	{
-		META_CONPRINTF("[MM-RTS] Failed to send HTTP request to %s\n", url);
+		META_CONPRINTF("[FKZ] Failed to send HTTP request to %s\n", url);
 		pHTTP->ReleaseHTTPRequest(req);
 		return;
 	}
@@ -100,24 +100,24 @@ void HttpClient::OnHTTPRequestCompleted(HTTPRequestCompleted_t *pResult, bool bI
 	if (bIOFailure || !pResult->m_bRequestSuccessful)
 	{
 		m_failCount++;
-		META_CONPRINTF("[MM-RTS] HTTP request failed (IO failure, fail #%d)\n", m_failCount);
+		META_CONPRINTF("[FKZ] HTTP request failed (IO failure, fail #%d)\n", m_failCount);
 	}
 	else if (pResult->m_eStatusCode == k_EHTTPStatusCode200OK)
 	{
 		if (m_failCount > 0)
-			META_CONPRINTF("[MM-RTS] POST recovered after %d failures\n", m_failCount);
+			META_CONPRINTF("[FKZ] POST recovered after %d failures\n", m_failCount);
 		m_failCount = 0;
 		m_successCount++;
 		if (m_successCount == 1 || m_successCount % 30 == 0)
-			META_CONPRINTF("[MM-RTS] POST OK (count=%d)\n", m_successCount);
+			META_CONPRINTF("[FKZ] POST OK (count=%d)\n", m_successCount);
 	}
 	else
 	{
 		m_failCount++;
-		META_CONPRINTF("[MM-RTS] HTTP %d (fail #%d)\n", pResult->m_eStatusCode, m_failCount);
+		META_CONPRINTF("[FKZ] HTTP %d (fail #%d)\n", pResult->m_eStatusCode, m_failCount);
 
 		if (pResult->m_eStatusCode >= 301 && pResult->m_eStatusCode <= 308)
-			META_CONPRINTF("[MM-RTS] Redirect detected. Update api_url in config to the final URL\n");
+			META_CONPRINTF("[FKZ] Redirect detected. Update api_url in config to the final URL\n");
 	}
 
 	// Release the request handle

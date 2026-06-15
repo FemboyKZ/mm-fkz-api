@@ -53,13 +53,13 @@ jobs:
         run: |
           mkdir -p staging/addons
           cp -r build/package/addons/* staging/addons/
-          mkdir -p staging/cfg/mm-cs2kz-rts
-          cp configs/*.cfg staging/cfg/mm-cs2kz-rts/
+          mkdir -p staging/cfg/fkz-api
+          cp configs/*.cfg staging/cfg/fkz-api/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mm-cs2kz-rts-linux
+          name: mm-fkz-api-linux
           path: staging
 
   build-windows:
@@ -105,13 +105,13 @@ jobs:
         run: |
           New-Item -ItemType Directory -Force -Path staging/addons | Out-Null
           Copy-Item -Recurse build/package/addons/* staging/addons/
-          New-Item -ItemType Directory -Force -Path staging/cfg/mm-cs2kz-rts | Out-Null
-          Copy-Item configs/*.cfg staging/cfg/mm-cs2kz-rts/
+          New-Item -ItemType Directory -Force -Path staging/cfg/fkz-api | Out-Null
+          Copy-Item configs/*.cfg staging/cfg/fkz-api/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mm-cs2kz-rts-windows
+          name: mm-fkz-api-windows
           path: staging
 
   release:
@@ -126,24 +126,24 @@ jobs:
       - name: Download Linux artifact
         uses: actions/download-artifact@v8
         with:
-          name: mm-cs2kz-rts-linux
-          path: mm-cs2kz-rts-linux
+          name: mm-fkz-api-linux
+          path: mm-fkz-api-linux
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v8
         with:
-          name: mm-cs2kz-rts-windows
-          path: mm-cs2kz-rts-windows
+          name: mm-fkz-api-windows
+          path: mm-fkz-api-windows
 
       - name: Create archives
         run: |
-          cd mm-cs2kz-rts-linux && zip -r ../mm-cs2kz-rts-${{ github.ref_name }}-linux.zip . && cd ..
-          cd mm-cs2kz-rts-windows && zip -r ../mm-cs2kz-rts-${{ github.ref_name }}-windows.zip . && cd ..
+          cd mm-fkz-api-linux && zip -r ../mm-fkz-api-${{ github.ref_name }}-linux.zip . && cd ..
+          cd mm-fkz-api-windows && zip -r ../mm-fkz-api-${{ github.ref_name }}-windows.zip . && cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            mm-cs2kz-rts-${{ github.ref_name }}-linux.zip
-            mm-cs2kz-rts-${{ github.ref_name }}-windows.zip
+            mm-fkz-api-${{ github.ref_name }}-linux.zip
+            mm-fkz-api-${{ github.ref_name }}-windows.zip
           generate_release_notes: true

@@ -99,7 +99,7 @@ void PluginConfig::Load()
 	}
 	if (!file)
 	{
-		META_CONPRINTF("[MM-RTS] Config not found at %s\n", cfgPath);
+		META_CONPRINTF("[FKZ] Config not found at %s\n", cfgPath);
 		return;
 	}
 

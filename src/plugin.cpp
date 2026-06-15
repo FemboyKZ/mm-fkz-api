@@ -1,7 +1,8 @@
 /**
- * MM CS2KZ Realtime Status
+ * FKZ API Plugin
  *
- * Reports server/player data to API via periodic HTTP POST.
+ * Exposes FKZ API calls as natives.
+ * Reports server/player data to API via periodic POST.
  */
 
 #include "plugin.h"
@@ -16,14 +17,11 @@
 #include <eiface.h>
 #include <iserver.h>
 
-// GameSessionConfiguration_t is only forward-declared in the SDK (definition commented out).
-// We define it as empty since we only pass it by const& in hooks and never access members.
 class GameSessionConfiguration_t {};
 
 MMSPlugin g_ThisPlugin;
 PLUGIN_EXPOSE(MMSPlugin, g_ThisPlugin);
 
-// SourceHook declarations
 SH_DECL_HOOK3_void(ISource2Server, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
 SH_DECL_HOOK1_void(ISource2Server, ServerHibernationUpdate, SH_NOATTRIB, 0, bool);
 SH_DECL_HOOK4_void(ISource2GameClients, ClientPutInServer, SH_NOATTRIB, 0, CPlayerSlot, char const *, int, uint64);
@@ -49,11 +47,11 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 	if (g_Config.apiUrl[0] == '\0')
 	{
-		META_CONPRINTF("[MM-RTS] No api_url configured, reporting disabled\n");
+		META_CONPRINTF("[FKZ] No api_url configured, reporting disabled\n");
 	}
 	else
 	{
-		META_CONPRINTF("[MM-RTS] v%s loaded - reporting to %s every %.0fs (key=%s)\n",
+		META_CONPRINTF("[FKZ] v%s loaded - reporting to %s every %.0fs (key=%s)\n",
 			GetVersion(), g_Config.apiUrl, g_Config.interval,
 			g_Config.apiKey[0] != '\0' ? "set" : "NOT SET");
 	}
@@ -111,7 +109,7 @@ void MMSPlugin::Hook_StartupServer(const GameSessionConfiguration_t &config, ISo
 	// Reset report timer, first report after short delay
 	m_lastReportTime = Plat_FloatTime() + 2.0 - g_Config.interval;
 
-	META_CONPRINTF("[MM-RTS] Server started, reporting active\n");
+	META_CONPRINTF("[FKZ] Server started, reporting active\n");
 }
 
 void MMSPlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
@@ -174,5 +172,5 @@ void MMSPlugin::SendHibernate()
 	snprintf(url, sizeof(url), "%s/hibernate", g_Config.apiUrl);
 	g_HttpClient.Post(url, payload, 5);
 
-	META_CONPRINTF("[MM-RTS] Sent hibernate signal (server empty)\n");
+	META_CONPRINTF("[FKZ] Sent hibernate signal (server empty)\n");
 }

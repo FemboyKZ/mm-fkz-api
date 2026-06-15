@@ -74,7 +74,7 @@ void ServerInfo::Cache()
 	// Map name
 	UpdateMap();
 
-	META_CONPRINTF("[MM-RTS] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n",
+	META_CONPRINTF("[FKZ] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n",
 		hostname, mapName, version, tickrate, secure ? "yes" : "no");
 }
 

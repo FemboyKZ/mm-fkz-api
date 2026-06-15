@@ -1,6 +1,6 @@
-# MM CS2KZ Realtime Status
+# MM FKZ API Plugin
 
-Metamod plugin to collect realtime server and player details to send to an API.
+Exposes API endpoint calls as natives and tracks player's/server's realtime status.
 
 This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 
@@ -17,7 +17,7 @@ This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 
 ```bash
 mkdir -p build && cd build
-python3 ../configure.py
+python3 ../configure.py --enable-optimize
 ambuild
 ```
 

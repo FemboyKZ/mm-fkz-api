@@ -168,6 +168,10 @@ void MMSPlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName,
 void MMSPlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName,
                                        int type, uint64 xuid) {
   g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
+
+  if (type != 1 && g_Config.apiUrl[0] != '\0' &&
+      g_PlayerManager.GetHumanPlayerCount() == 1)
+    m_lastReportTime = 0.0;
 }
 
 void MMSPlugin::Hook_ClientDisconnect(CPlayerSlot slot,
@@ -203,6 +207,10 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick,
   g_HttpClient.RunCallbacks();
 
   if (g_Config.apiUrl[0] == '\0')
+    return;
+
+  // Don't report while idle (no human players / server hibernating).
+  if (g_PlayerManager.GetHumanPlayerCount() == 0)
     return;
 
   double now = Plat_FloatTime();

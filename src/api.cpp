@@ -55,8 +55,12 @@ bool Dispatch(const char *method, const char *path, const char *body,
   snprintf(url, sizeof(url), "%s%s%s", g_Config.apiUrl,
            (path[0] == '/') ? "" : "/", path);
 
+  // Give the request at least the report interval before timing out
+  uint32 timeout =
+      (uint32)(g_Config.interval > 10.0f ? g_Config.interval : 10.0f);
+
   ApiCallCtx *ctx = new ApiCallCtx{cb, data};
-  if (!g_HttpClient.Request(method, url, body, 10, ApiTrampoline, ctx)) {
+  if (!g_HttpClient.Request(method, url, body, timeout, ApiTrampoline, ctx)) {
     delete ctx;
     return false;
   }

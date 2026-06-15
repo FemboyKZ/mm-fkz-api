@@ -28,8 +28,10 @@ static void OnReportResponse(bool /*success*/, int statusCode, const char *body,
       META_CONPRINTF("[FKZ] POST OK (count=%d)\n", g_successCount);
   } else if (statusCode == 0) {
     g_failCount++;
-    META_CONPRINTF("[FKZ] POST transport error to %s: %s (fail #%d)\n",
-                   g_Config.apiUrl, body ? body : "", g_failCount);
+    META_CONPRINTF(
+        "[FKZ] POST %s/servers/status transport error (no HTTP response: "
+        "timeout/DNS/TLS/conn) (fail #%d)\n",
+        g_Config.apiUrl, g_failCount);
   } else {
     g_failCount++;
     META_CONPRINTF("[FKZ] POST HTTP %d (fail #%d)\n", statusCode, g_failCount);

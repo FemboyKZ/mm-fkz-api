@@ -45,6 +45,9 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen,
                      bool late) {
   PLUGIN_SAVEVARS();
 
+  // ismm->MetaFactory(FKZ_API_INTERFACE) -> our OnMetamodQuery().
+  ismm->AddListener(this, this);
+
   GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2Server, ISource2Server,
                       INTERFACEVERSION_SERVERGAMEDLL);
   GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2GameClients,

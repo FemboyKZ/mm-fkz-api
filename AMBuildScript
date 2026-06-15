@@ -252,11 +252,17 @@ extern const char* PLUGIN_REVISION_COUNT;
             builder.AddConfigureFile(git_head_path)
             builder.AddConfigureFile(direct_head)
 
-            revision_count = runAndReturn(["git", "rev-list", "--count", "HEAD"])
-            revision_hash = runAndReturn(
-                ["git", "log", "--pretty=format:%h:%H", "-n", "1"]
-            )
-            shorthash, longhash = revision_hash.split(":")
+            # Don't hard-fail the whole configure if git can't run (e.g. inside
+            # a build container with no/partial repo); fall back to "0".
+            try:
+                revision_count = runAndReturn(["git", "rev-list", "--count", "HEAD"])
+                revision_hash = runAndReturn(
+                    ["git", "log", "--pretty=format:%h:%H", "-n", "1"]
+                )
+                shorthash, longhash = revision_hash.split(":")
+            except Exception as e:
+                print("Could not resolve git revision, using defaults: {}".format(e))
+                shorthash = longhash = revision_count = "0"
 
         if "{{git-shorthash}}" in version:
             version = version.replace("{{git-shorthash}}", shorthash)

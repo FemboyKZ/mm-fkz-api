@@ -114,15 +114,15 @@ class MMSPluginConfig(object):
     self.target_archs = set()
 
     self.metadata = {
-      'name': 'mm-cs2kz-rts',
-      'alias': 'mm_cs2kz_rts',
-      'display_name': 'MM CS2KZ Realtime Status',
-      'description': 'Reports server/player/CS2KZ data to API via HTTP',
+      'name': 'fkz-api',
+      'alias': 'mm_fkz_api',
+      'display_name': 'MM FKZ API Plugin',
+      'description': 'Async wrapper for FKZ API calls + realtime status reporting.',
       'author': 'jvnipers',
-      'url': 'https://github.com/FemboyKZ/mm-realtime-status',
-      'log_tag': 'MM-RTS',
+      'url': 'https://github.com/FemboyKZ/mm-fkz-api',
+      'log_tag': 'FKZ',
       'license': 'AGPL-3.0',
-      'version': '1.0.0.{{git-shorthash}}',
+      'version': '2.0.0.{{git-shorthash}}',
     }
 
     if builder.options.targets:

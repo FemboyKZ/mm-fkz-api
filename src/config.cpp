@@ -82,24 +82,18 @@ void PluginConfig::Load()
 	// Build absolute path using Metamod's game base directory
 	const char *baseDir = g_SMAPI->GetBaseDir();
 	char cfgPath[512];
-	snprintf(cfgPath, sizeof(cfgPath), "%s/cfg/%s/mm-rts.cfg", baseDir, PLUGIN_NAME);
+	snprintf(cfgPath, sizeof(cfgPath), "%s/cfg/%s/core.cfg", baseDir, PLUGIN_NAME);
 
 	FILE *file = fopen(cfgPath, "r");
 	if (!file)
 	{
-		// Try alternative path with hardcoded plugin name
-		snprintf(cfgPath, sizeof(cfgPath), "%s/cfg/mm-cs2kz-rts/mm-rts.cfg", baseDir);
+		// Fallback: alongside the plugin's addons folder.
+		snprintf(cfgPath, sizeof(cfgPath), "%s/addons/%s/core.cfg", baseDir, PLUGIN_NAME);
 		file = fopen(cfgPath, "r");
 	}
 	if (!file)
 	{
-		// Try addons path as last resort
-		snprintf(cfgPath, sizeof(cfgPath), "%s/addons/%s/mm-rts.cfg", baseDir, PLUGIN_NAME);
-		file = fopen(cfgPath, "r");
-	}
-	if (!file)
-	{
-		META_CONPRINTF("[FKZ] Config not found at %s\n", cfgPath);
+		META_CONPRINTF("[FKZ] Config not found at %s/cfg/%s/core.cfg\n", baseDir, PLUGIN_NAME);
 		return;
 	}
 
@@ -137,4 +131,8 @@ void PluginConfig::Load()
 	}
 
 	fclose(file);
+
+	size_t urlLen = strlen(apiUrl);
+	if (urlLen > 0 && apiUrl[urlLen - 1] == '/')
+		apiUrl[urlLen - 1] = '\0';
 }

@@ -2,6 +2,7 @@
 #include <cstring>
 
 #include "config.h"
+#include "cs2kz.h"
 #include "globals.h"
 #include "json_builder.h"
 #include "player_manager.h"
@@ -203,7 +204,8 @@ std::string BuildPayloadJson() {
 
     json +=
         std::string("\"in_game\":") + (player.inGame ? "true" : "false") + ",";
-    json += "\"cs2kz\":null";
+    json += "\"cs2kz\":null,";
+    json += "\"playtime_modes\":" + BuildPlaytimeModesJson(i);
     json += "}";
   }
 

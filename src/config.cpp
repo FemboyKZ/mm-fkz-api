@@ -30,7 +30,9 @@ static bool ParseConfigLine(const char *line, char *key, int keyLen, char *value
 
 	// Skip leading whitespace
 	while (line[pos] == ' ' || line[pos] == '\t')
+	{
 		pos++;
+	}
 
 	// Read key (optionally quoted)
 	if (line[pos] == '"')
@@ -38,27 +40,42 @@ static bool ParseConfigLine(const char *line, char *key, int keyLen, char *value
 		pos++;
 		int start = pos;
 		while (line[pos] != '"' && line[pos] != '\0')
+		{
 			pos++;
+		}
 		int len = pos - start;
-		if (len >= keyLen) len = keyLen - 1;
+		if (len >= keyLen)
+		{
+			len = keyLen - 1;
+		}
 		strncpy(key, line + start, len);
 		key[len] = '\0';
-		if (line[pos] == '"') pos++;
+		if (line[pos] == '"')
+		{
+			pos++;
+		}
 	}
 	else
 	{
 		int start = pos;
 		while (line[pos] != ' ' && line[pos] != '\t' && line[pos] != '\0')
+		{
 			pos++;
+		}
 		int len = pos - start;
-		if (len >= keyLen) len = keyLen - 1;
+		if (len >= keyLen)
+		{
+			len = keyLen - 1;
+		}
 		strncpy(key, line + start, len);
 		key[len] = '\0';
 	}
 
 	// Skip whitespace between key and value
 	while (line[pos] == ' ' || line[pos] == '\t')
+	{
 		pos++;
+	}
 
 	// Read value (must be quoted)
 	if (line[pos] == '"')
@@ -66,9 +83,14 @@ static bool ParseConfigLine(const char *line, char *key, int keyLen, char *value
 		pos++;
 		int start = pos;
 		while (line[pos] != '"' && line[pos] != '\0')
+		{
 			pos++;
+		}
 		int len = pos - start;
-		if (len >= valueLen) len = valueLen - 1;
+		if (len >= valueLen)
+		{
+			len = valueLen - 1;
+		}
 		strncpy(value, line + start, len);
 		value[len] = '\0';
 		return true;
@@ -114,43 +136,73 @@ void PluginConfig::Load()
 	{
 		// Trim newline
 		size_t len = strlen(line);
-		while (len > 0 && (line[len-1] == '\n' || line[len-1] == '\r'))
+		while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
+		{
 			line[--len] = '\0';
+		}
 
 		// Skip empty lines and comments
 		const char *trimmed = line;
-		while (*trimmed == ' ' || *trimmed == '\t') trimmed++;
+		while (*trimmed == ' ' || *trimmed == '\t')
+		{
+			trimmed++;
+		}
 		if (*trimmed == '\0' || *trimmed == '/' || *trimmed == '#')
+		{
 			continue;
+		}
 
 		char key[64], value[256];
 		if (ParseConfigLine(trimmed, key, sizeof(key), value, sizeof(value)))
 		{
 			if (strcmp(key, "api_url") == 0)
+			{
 				strncpy(apiUrl, value, sizeof(apiUrl) - 1);
+			}
 			else if (strcmp(key, "api_key") == 0)
+			{
 				strncpy(apiKey, value, sizeof(apiKey) - 1);
+			}
 			else if (strcmp(key, "server_ip") == 0)
+			{
 				strncpy(serverIp, value, sizeof(serverIp) - 1);
+			}
 			else if (strcmp(key, "server_port") == 0)
+			{
 				serverPort = atoi(value);
+			}
 			else if (strcmp(key, "interval") == 0)
 			{
 				interval = static_cast<float>(atof(value));
-				if (interval < 1.0f) interval = 1.0f;
+				if (interval < 1.0f)
+				{
+					interval = 1.0f;
+				}
 			}
 			else if (strcmp(key, "db_driver") == 0)
+			{
 				strncpy(dbDriver, value, sizeof(dbDriver) - 1);
+			}
 			else if (strcmp(key, "db_database") == 0)
+			{
 				strncpy(dbDatabase, value, sizeof(dbDatabase) - 1);
+			}
 			else if (strcmp(key, "db_host") == 0)
+			{
 				strncpy(dbHost, value, sizeof(dbHost) - 1);
+			}
 			else if (strcmp(key, "db_user") == 0)
+			{
 				strncpy(dbUser, value, sizeof(dbUser) - 1);
+			}
 			else if (strcmp(key, "db_pass") == 0)
+			{
 				strncpy(dbPass, value, sizeof(dbPass) - 1);
+			}
 			else if (strcmp(key, "db_port") == 0)
+			{
 				dbPort = atoi(value);
+			}
 		}
 	}
 
@@ -158,5 +210,7 @@ void PluginConfig::Load()
 
 	size_t urlLen = strlen(apiUrl);
 	if (urlLen > 0 && apiUrl[urlLen - 1] == '/')
+	{
 		apiUrl[urlLen - 1] = '\0';
+	}
 }

@@ -28,7 +28,10 @@ public:
 	int GetHumanPlayerCount() const;
 	int GetBotCount() const;
 
-	const PlayerInfo &GetPlayer(int slot) const { return m_players[slot]; }
+	const PlayerInfo &GetPlayer(int slot) const
+	{
+		return m_players[slot];
+	}
 
 private:
 	PlayerInfo m_players[MAXPLAYERS + 1];

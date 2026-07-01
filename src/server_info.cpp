@@ -62,7 +62,9 @@ void ServerInfo::Cache()
 				// Trim trailing whitespace/newline
 				char *end = val + strlen(val) - 1;
 				while (end >= val && (*end == '\n' || *end == '\r' || *end == ' '))
+				{
 					*end-- = '\0';
+				}
 				strncpy(version, val, sizeof(version) - 1);
 				version[sizeof(version) - 1] = '\0';
 				break;
@@ -74,8 +76,8 @@ void ServerInfo::Cache()
 	// Map name
 	UpdateMap();
 
-	META_CONPRINTF("[FKZ] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n",
-		hostname, mapName, version, tickrate, secure ? "yes" : "no");
+	META_CONPRINTF("[FKZ] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n", hostname, mapName, version, tickrate,
+				   secure ? "yes" : "no");
 }
 
 void ServerInfo::UpdateMap()

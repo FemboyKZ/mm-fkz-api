@@ -6,7 +6,6 @@
 #include <igameevents.h>
 #include <iserver.h>
 
-
 #define MAXPLAYERS 64
 
 class IGameEventSystem;

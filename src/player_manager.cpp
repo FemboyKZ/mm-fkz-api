@@ -17,7 +17,10 @@ void PlayerManager::ResetPlayer(int slot)
 
 void PlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid, const char *address, bool fakePlayer)
 {
-	if (slot < 0 || slot >= MAXPLAYERS) return;
+	if (slot < 0 || slot >= MAXPLAYERS)
+	{
+		return;
+	}
 
 	m_players[slot].connected = true;
 	m_players[slot].inGame = false;
@@ -36,13 +39,19 @@ void PlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid,
 		m_players[slot].ipAddress[sizeof(m_players[slot].ipAddress) - 1] = '\0';
 		// Strip port if present
 		char *colon = strrchr(m_players[slot].ipAddress, ':');
-		if (colon) *colon = '\0';
+		if (colon)
+		{
+			*colon = '\0';
+		}
 	}
 }
 
 void PlayerManager::OnClientPutInServer(int slot, const char *name, int type, uint64_t xuid)
 {
-	if (slot < 0 || slot >= MAXPLAYERS) return;
+	if (slot < 0 || slot >= MAXPLAYERS)
+	{
+		return;
+	}
 
 	m_players[slot].connected = true;
 	m_players[slot].inGame = true;
@@ -57,12 +66,17 @@ void PlayerManager::OnClientPutInServer(int slot, const char *name, int type, ui
 
 	// Set connect time if not already set (may have been set in OnClientConnected)
 	if (m_players[slot].connectTime <= 0.0)
+	{
 		m_players[slot].connectTime = Plat_FloatTime();
+	}
 }
 
 void PlayerManager::OnClientDisconnect(int slot)
 {
-	if (slot < 0 || slot >= MAXPLAYERS) return;
+	if (slot < 0 || slot >= MAXPLAYERS)
+	{
+		return;
+	}
 	ResetPlayer(slot);
 }
 
@@ -72,7 +86,9 @@ int PlayerManager::GetHumanPlayerCount() const
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		if (m_players[i].connected && m_players[i].inGame && !m_players[i].isBot)
+		{
 			count++;
+		}
 	}
 	return count;
 }
@@ -83,7 +99,9 @@ int PlayerManager::GetBotCount() const
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		if (m_players[i].connected && m_players[i].isBot)
+		{
 			count++;
+		}
 	}
 	return count;
 }

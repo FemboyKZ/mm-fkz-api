@@ -9,6 +9,7 @@
 #include "api.h"
 #include "config.h"
 #include "cross_chat.h"
+#include "database.h"
 #include "globals.h"
 #include "http_client.h"
 #include "json_builder.h"
@@ -137,11 +138,15 @@ bool MMSPlugin::Unload(char *error, size_t maxlen) {
                          &MMSPlugin::Hook_DispatchConCommand, false);
 
   g_HttpClient.ReleasePending();
+  Database_Cleanup();
 
   return true;
 }
 
-void MMSPlugin::AllPluginsLoaded() { g_HttpClient.Init(); }
+void MMSPlugin::AllPluginsLoaded() {
+  g_HttpClient.Init();
+  Database_Init();
+}
 
 void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret) {
   if (iface && strcmp(iface, FKZ_API_INTERFACE) == 0) {
@@ -182,6 +187,10 @@ void MMSPlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName,
 void MMSPlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName,
                                        int type, uint64 xuid) {
   g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
+
+  // Load saved cross-chat state once the player has a real steamID.
+  if (type != 1)
+    CrossChat_LoadPrefs(slot.Get(), xuid);
 
   if (type != 1 && g_Config.apiUrl[0] != '\0' &&
       g_PlayerManager.GetHumanPlayerCount() == 1)

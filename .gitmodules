@@ -8,3 +8,6 @@
 [submodule "cs2kz-metamod"]
 	path = cs2kz-metamod
 	url = https://github.com/KZGlobalTeam/cs2kz-metamod
+[submodule "vendor/sql_mm"]
+	path = vendor/sql_mm
+	url = https://github.com/zer0k-z/sql_mm

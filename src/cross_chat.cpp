@@ -8,14 +8,18 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
+#include <vector>
 
 #include "config.h"
 #include "cross_chat.h"
+#include "database.h"
 #include "globals.h"
 #include "http_client.h"
 #include "json_builder.h"
 #include "player_manager.h"
 #include "plugin.h"
+
+#include "../vendor/sql_mm/src/public/sql_mm.h"
 
 #include <engine/igameeventsystem.h>
 #include <irecipientfilter.h>
@@ -111,7 +115,51 @@ static void NotifyMuteState(int slot, bool muted) {
                          " Cross-server messages shown.");
 }
 
-// ---- Send ------------------------------------------------------------------
+// Persist the current mute state for the player in this slot.
+// Upsert keyed by steamID. char[] query binds the non-format Query overload.
+static void SavePref(int slot) {
+  if (!Database_IsReady())
+    return;
+  const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+  if (!p.connected || p.isBot || p.steamId64 == 0)
+    return;
+
+  int muted = g_muted[slot] ? 1 : 0;
+  char query[256];
+  if (Database_GetType() == DatabaseType::MySQL)
+    snprintf(query, sizeof(query),
+             "INSERT INTO player_prefs (steamid, crosschat_muted) VALUES "
+             "(%llu, %d) ON DUPLICATE KEY UPDATE crosschat_muted = %d;",
+             (unsigned long long)p.steamId64, muted, muted);
+  else
+    snprintf(query, sizeof(query),
+             "INSERT INTO player_prefs (steamid, crosschat_muted) VALUES "
+             "(%llu, %d) ON CONFLICT(steamid) DO UPDATE SET crosschat_muted = "
+             "%d;",
+             (unsigned long long)p.steamId64, muted, muted);
+
+  Database_GetConnection()->Query(query, [](ISQLQuery * /*q*/) {});
+}
+
+void CrossChat_LoadPrefs(int slot, uint64_t steamId64) {
+  if (!Database_IsReady() || slot < 0 || slot >= MAXPLAYERS || steamId64 == 0)
+    return;
+
+  char query[256];
+  snprintf(query, sizeof(query),
+           "SELECT crosschat_muted FROM player_prefs WHERE steamid = %llu;",
+           (unsigned long long)steamId64);
+
+  Database_GetConnection()->Query(query, [slot, steamId64](ISQLQuery *q) {
+    // The slot may have been recycled before this async result arrived.
+    const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+    if (!p.connected || p.steamId64 != steamId64)
+      return;
+    ISQLResult *result = q->GetResultSet();
+    if (result && result->FetchRow())
+      g_muted[slot] = result->GetInt(0) != 0;
+  });
+}
 
 static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/,
                        uint32 /*len*/, void * /*data*/) {
@@ -163,6 +211,7 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd,
       V_stricmp(text.c_str(), "/crosschat") == 0) {
     g_muted[slot] = !g_muted[slot];
     NotifyMuteState(slot, g_muted[slot]);
+    SavePref(slot);
     return;
   }
 

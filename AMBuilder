@@ -19,6 +19,7 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/json_builder.cpp",
         "src/reporter.cpp",
         "src/cross_chat.cpp",
+        "src/database.cpp",
         "src/api.cpp",
         "src/cs2kz.cpp",
     ]

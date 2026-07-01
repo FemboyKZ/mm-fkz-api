@@ -15,6 +15,12 @@ PluginConfig::PluginConfig()
 	serverIp[0] = '\0';
 	serverPort = 0;
 	interval = 10.0f;
+	dbDriver[0] = '\0';
+	dbDatabase[0] = '\0';
+	dbHost[0] = '\0';
+	dbUser[0] = '\0';
+	dbPass[0] = '\0';
+	dbPort = 3306;
 }
 
 // Config file parser: key "value" format
@@ -78,6 +84,12 @@ void PluginConfig::Load()
 	serverIp[0] = '\0';
 	serverPort = 0;
 	interval = 10.0f;
+	dbDriver[0] = '\0';
+	dbDatabase[0] = '\0';
+	dbHost[0] = '\0';
+	dbUser[0] = '\0';
+	dbPass[0] = '\0';
+	dbPort = 3306;
 
 	// Build absolute path using Metamod's game base directory
 	const char *baseDir = g_SMAPI->GetBaseDir();
@@ -127,6 +139,18 @@ void PluginConfig::Load()
 				interval = static_cast<float>(atof(value));
 				if (interval < 1.0f) interval = 1.0f;
 			}
+			else if (strcmp(key, "db_driver") == 0)
+				strncpy(dbDriver, value, sizeof(dbDriver) - 1);
+			else if (strcmp(key, "db_database") == 0)
+				strncpy(dbDatabase, value, sizeof(dbDatabase) - 1);
+			else if (strcmp(key, "db_host") == 0)
+				strncpy(dbHost, value, sizeof(dbHost) - 1);
+			else if (strcmp(key, "db_user") == 0)
+				strncpy(dbUser, value, sizeof(dbUser) - 1);
+			else if (strcmp(key, "db_pass") == 0)
+				strncpy(dbPass, value, sizeof(dbPass) - 1);
+			else if (strcmp(key, "db_port") == 0)
+				dbPort = atoi(value);
 		}
 	}
 

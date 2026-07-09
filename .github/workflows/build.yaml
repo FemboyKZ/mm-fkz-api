@@ -24,8 +24,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: recursive
+          submodules: false
           fetch-depth: 0
+      - name: Recurse into submodules needed for build
+        run: |
+          git submodule update --init hl2sdk-cs2 vendor/sql_mm
+          git submodule update --init --recursive metamod-source
 
       - name: Install dependencies
         run: |
@@ -70,8 +74,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
-          submodules: recursive
-
+          submodules: false
+          fetch-depth: 0
+      - name: Recurse into submodules needed for build
+        run: |
+          git submodule update --init hl2sdk-cs2 vendor/sql_mm
+          git submodule update --init --recursive metamod-source
       - name: Set up Python
         uses: actions/setup-python@v6
         with:

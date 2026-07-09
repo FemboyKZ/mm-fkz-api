@@ -28,9 +28,9 @@ jobs:
           fetch-depth: 0
       - name: Recurse into submodules needed for build
         run: |
-          git submodule update --init hl2sdk-cs2 vendor/sql_mm
-          git submodule update --init --recursive metamod-source
-
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init --recursive hl2sdk-cs2 metamod-source
+          git submodule update --init vendor/sql_mm
       - name: Install dependencies
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
@@ -78,8 +78,9 @@ jobs:
           fetch-depth: 0
       - name: Recurse into submodules needed for build
         run: |
-          git submodule update --init hl2sdk-cs2 vendor/sql_mm
-          git submodule update --init --recursive metamod-source
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git submodule update --init --recursive hl2sdk-cs2 metamod-source
+          git submodule update --init vendor/sql_mm
       - name: Set up Python
         uses: actions/setup-python@v6
         with:

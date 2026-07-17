@@ -31,6 +31,7 @@
 
 // CS2 chat color control bytes (from cs2kz's color table).
 #define CHAT_DEFAULT "\x01"
+#define CHAT_RED     "\x02"
 #define CHAT_ORCHID  "\x0E"
 
 #define HUD_PRINTTALK 3 // TextMsg destination: the chat area
@@ -110,7 +111,7 @@ static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
 	delete msg;
 }
 
-static void PrintCrossChat(const char *alias, const char *name, const char *message)
+static void PrintCrossChat(const char *alias, const char *name, const char *message, bool muted)
 {
 	CChatRecipientFilter filter;
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
@@ -122,8 +123,10 @@ static void PrintCrossChat(const char *alias, const char *name, const char *mess
 		}
 	}
 
+	// A muted sender has cross-chat hidden, so tag their name to warn everyone else that replies won't reach them.
+	const char *tag = muted ? CHAT_RED " (muted)" CHAT_DEFAULT : "";
 	char line[768]; // fits [alias<=64] name<=64: message<=512 + control bytes
-	snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s: %s", alias, name, message);
+	snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s%s: %s", alias, name, tag, message);
 	SendChatLine(filter, line);
 }
 
@@ -290,7 +293,8 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p.steamId64);
 
 	std::string body = "{\"ip\":\"" + JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" + steamId + "\",\"name\":\""
-					   + JsonEscape(p.name) + "\",\"message\":\"" + JsonEscape(text.c_str()) + "\"}";
+					   + JsonEscape(p.name) + "\",\"message\":\"" + JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
+					   + "}";
 
 	std::string url = std::string(g_Config.apiUrl) + "/chat/messages";
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);
@@ -327,7 +331,7 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 					std::string alias = m.value("alias", std::string());
 					std::string name = m.value("name", std::string());
 					std::string message = m.value("message", std::string());
-					PrintCrossChat(alias.c_str(), name.c_str(), message.c_str());
+					PrintCrossChat(alias.c_str(), name.c_str(), message.c_str(), m.value("muted", false));
 				}
 			}
 		}

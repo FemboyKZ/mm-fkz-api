@@ -99,7 +99,13 @@ static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
 		return;
 	}
 
-	auto msg = netmsg->AllocateMessage()->ToPB<CUserMessageTextMsg>();
+	CNetMessage *data = netmsg->AllocateMessage();
+	if (!data)
+	{
+		return;
+	}
+
+	auto msg = data->ToPB<CUserMessageTextMsg>();
 	msg->set_dest(HUD_PRINTTALK);
 	msg->add_param(line); // param[0] is the text, control bytes give color
 	msg->add_param("");
@@ -107,8 +113,10 @@ static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
 	msg->add_param("");
 	msg->add_param("");
 
-	g_pGameEventSystem->PostEventAbstract(0, false, const_cast<CChatRecipientFilter *>(&filter), netmsg, msg, 0);
-	delete msg;
+	// AllocateMessage hands back a pool allocated message, not a new'd object.
+	// It has to go back through DeallocateNetMessageAbstract. delete frees the wrong way and corrupts the heap.
+	g_pGameEventSystem->PostEventAbstract(0, false, const_cast<CChatRecipientFilter *>(&filter), netmsg, data, 0);
+	g_pNetworkMessages->DeallocateNetMessageAbstract(netmsg, data);
 }
 
 static void PrintCrossChat(const char *alias, const char *name, const char *message, bool muted)
@@ -117,10 +125,17 @@ static void PrintCrossChat(const char *alias, const char *name, const char *mess
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-		if (p.connected && p.inGame && !p.isBot && !g_muted[slot])
+		if (!p.connected || !p.inGame || p.isBot || g_muted[slot])
 		{
-			filter.AddRecipient(slot);
+			continue;
 		}
+		// inGame trails the live net channel by a frame on disconnect.
+		// PostEventAbstract dereferences each recipient's channel, so drop any slot without one.
+		if (!g_pEngineServer || !g_pEngineServer->GetPlayerNetInfo(CPlayerSlot(slot)))
+		{
+			continue;
+		}
+		filter.AddRecipient(slot);
 	}
 
 	// A muted sender has cross-chat hidden, so tag their name to warn everyone else that replies won't reach them.

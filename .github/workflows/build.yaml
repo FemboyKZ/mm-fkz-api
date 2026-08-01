@@ -82,7 +82,7 @@ jobs:
           git submodule update --init --recursive hl2sdk-cs2 metamod-source
           git submodule update --init vendor/sql_mm
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: "3.14"
 

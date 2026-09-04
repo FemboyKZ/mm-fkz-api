@@ -38,10 +38,12 @@
 
 #define CHAT_RETRY_SECONDS          3.0
 #define CHAT_STREAM_TIMEOUT_SECONDS 60 // > the API's ~25s park window
+#define CHAT_MAX_PARSE_FAILURES     3  // unreadable replies tolerated before resyncing
 
 static int g_chatCursor = -1;  // last relay id seen (-1 = needs handshake)
 static bool g_streamActive;    // a long-poll request is in flight
 static double g_nextRetryTime; // earliest time to (re)open the stream
+static int g_parseFailures;    // consecutive replies we could not read
 static bool g_muted[MAXPLAYERS + 1];
 
 // Routes a message to a fixed set of player slots.
@@ -223,7 +225,7 @@ void CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 
 static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, uint32 /*len*/, void * /*data*/)
 {
-	if (statusCode != 200 && statusCode != 0)
+	if (statusCode != 200)
 	{
 		META_CONPRINTF("[FKZ] chat POST returned HTTP %d\n", statusCode);
 	}
@@ -328,26 +330,39 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 	if (body && body[0] != '\0')
 	{
 		nlohmann::json doc = nlohmann::json::parse(body, nullptr, false);
-		if (doc.is_object())
+		if (!doc.is_object())
 		{
-			// Trust the server's cursor (only one poll is ever in flight, so replies arrive in order).
-			// Adopting it unconditionally lets us recover if the API restarted and reset its cursor below ours.
-			g_chatCursor = doc.value("cursor", g_chatCursor);
-
-			auto msgs = doc.find("messages");
-			if (msgs != doc.end() && msgs->is_array())
+			// The cursor only advances on a reply we could read, so an unreadable one comes straight back on the next poll.
+			// Without the backoff that spins at tick rate, and without the resync it never clears.
+			g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
+			if (++g_parseFailures >= CHAT_MAX_PARSE_FAILURES)
 			{
-				for (const auto &m : *msgs)
+				META_CONPRINTF("[FKZ] chat stream unreadable %d times, resyncing cursor\n", g_parseFailures);
+				g_parseFailures = 0;
+				g_chatCursor = -1; // handshake past the backlog we cannot parse
+			}
+			return;
+		}
+
+		g_parseFailures = 0;
+
+		// Trust the server's cursor (only one poll is ever in flight, so replies arrive in order).
+		// Adopting it unconditionally lets us recover if the API restarted and reset its cursor below ours.
+		g_chatCursor = doc.value("cursor", g_chatCursor);
+
+		auto msgs = doc.find("messages");
+		if (msgs != doc.end() && msgs->is_array())
+		{
+			for (const auto &m : *msgs)
+			{
+				if (!m.is_object())
 				{
-					if (!m.is_object())
-					{
-						continue;
-					}
-					std::string alias = m.value("alias", std::string());
-					std::string name = m.value("name", std::string());
-					std::string message = m.value("message", std::string());
-					PrintCrossChat(alias.c_str(), name.c_str(), message.c_str(), m.value("muted", false));
+					continue;
 				}
+				std::string alias = m.value("alias", std::string());
+				std::string name = m.value("name", std::string());
+				std::string message = m.value("message", std::string());
+				PrintCrossChat(alias.c_str(), name.c_str(), message.c_str(), m.value("muted", false));
 			}
 		}
 	}

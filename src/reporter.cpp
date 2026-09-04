@@ -9,6 +9,7 @@
 
 #include "api.h"
 #include "config.h"
+#include "cs2kz.h"
 #include "json_builder.h"
 #include "plugin.h"
 #include "reporter.h"
@@ -60,7 +61,14 @@ static void OnHibernateResponse(bool /*success*/, int statusCode, const char * /
 
 void SendReport()
 {
+	// Flush the time elapsed since the last sample into each player's active mode before snapshotting.
+	CS2KZ_SampleAll();
+
 	std::string payload = BuildPayloadJson();
+
+	// The per-mode deltas are captured in the payload now, reset to begin a new interval.
+	CS2KZ_ResetAllPlaytimeDeltas();
+
 	g_FKZApi.PostServerStatus(payload.c_str(), OnReportResponse, NULL);
 }
 

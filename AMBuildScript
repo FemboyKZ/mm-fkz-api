@@ -23,9 +23,7 @@ def additionalDefines(context, binary, sdk):
 def additionalIncludes(context, binary, sdk):
     return [
         # Path should be absolute only!
-        # os.path.join(sdk['path'], 'game', 'server'),
-        # os.path.join(sdk['path'], 'public', 'entity2'),
-        # 'D:/absolute/path/to/include/folder/'
+        os.path.join(context.currentSourcePath, "cs2kz-metamod", "src", "public"),
     ]
 
 

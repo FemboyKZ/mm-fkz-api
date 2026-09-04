@@ -22,6 +22,10 @@ public:
 	// Exposes the IFKZApi interface to other Metamod plugins (MetaFactory).
 	void *OnMetamodQuery(const char *iface, int *ret) override;
 
+	// Re-query cs2kz-metamod's interface
+	void OnPluginLoad(PluginId id) override;
+	void OnPluginUnload(PluginId id) override;
+
 	// SourceHook callbacks
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
 	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);

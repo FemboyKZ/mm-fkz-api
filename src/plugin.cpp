@@ -9,6 +9,7 @@
 #include "api.h"
 #include "config.h"
 #include "cross_chat.h"
+#include "cs2kz.h"
 #include "database.h"
 #include "globals.h"
 #include "http_client.h"
@@ -115,6 +116,17 @@ void MMSPlugin::AllPluginsLoaded()
 {
 	g_HttpClient.Init();
 	Database_Init();
+	CS2KZ_Refresh();
+}
+
+void MMSPlugin::OnPluginLoad(PluginId /*id*/)
+{
+	CS2KZ_Refresh();
+}
+
+void MMSPlugin::OnPluginUnload(PluginId /*id*/)
+{
+	CS2KZ_Refresh();
 }
 
 void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret)
@@ -160,6 +172,7 @@ void MMSPlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, ui
 void MMSPlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
 	g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
+	CS2KZ_ResetPlayer(slot.Get());
 
 	// Load saved cross-chat state once the player has a real steamID.
 	if (type != 1)
@@ -181,6 +194,7 @@ void MMSPlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionRea
 
 	g_PlayerManager.OnClientDisconnect(s);
 	CrossChat_OnClientDisconnect(s);
+	CS2KZ_ResetPlayer(s);
 
 	// Send hibernate signal when last human player leaves
 	if (!wasFakeClient && g_PlayerManager.GetHumanPlayerCount() == 0 && g_Config.apiUrl[0] != '\0')
@@ -222,6 +236,9 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 
 	// Keep the cross-chat long-poll open while players are present.
 	CrossChat_Tick(humans > 0);
+
+	// Poll each player's cs2kz mode so the per-mode playtime follows mode switches between reports.
+	CS2KZ_Tick();
 
 	// Don't report while idle (no human players / server hibernating).
 	if (humans == 0)

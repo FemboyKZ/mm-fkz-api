@@ -194,7 +194,7 @@ std::string BuildPayloadJson()
 	json += "\"tickrate\":" + std::to_string(g_ServerInfo.tickrate) + ",";
 	json += std::string("\"secure\":") + (g_ServerInfo.secure ? "true" : "false") + ",";
 	json += "\"mm_version\":\"" + JsonEscape(g_ServerInfo.mmVersion) + "\",";
-	json += "\"cs2kz_loaded\":false,";
+	json += std::string("\"cs2kz_loaded\":") + (CS2KZ_IsLoaded() ? "true" : "false") + ",";
 	json += "\"plugins\":" + BuildPluginsJson() + ",";
 	json += "\"ip\":\"" + JsonEscape(ip) + "\",";
 	json += "\"port\":" + std::to_string(port) + ",";
@@ -242,7 +242,7 @@ std::string BuildPayloadJson()
 		json += "\"time_on_server\":" + std::string(timeBuf) + ",";
 
 		json += std::string("\"in_game\":") + (player.inGame ? "true" : "false") + ",";
-		json += "\"cs2kz\":null,";
+		json += "\"cs2kz\":" + BuildCS2KZJson(i) + ",";
 		json += "\"playtime_modes\":" + BuildPlaytimeModesJson(i);
 		json += "}";
 	}

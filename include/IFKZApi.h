@@ -65,7 +65,7 @@ public:
    *
    * @param method    HTTP verb: GET, POST, PUT, PATCH or DELETE
    *                  (case-insensitive).
-   * @param path      Endpoint path, e.g. "/kzglobal/records?limit=10".
+   * @param path      Endpoint path, e.g. "/global/records?limit=10".
    *                  Leading slash optional.
    * @param body      JSON body string for POST/PUT/PATCH, or nullptr.
    *                  Copied internally.
@@ -135,28 +135,28 @@ public:
   // KZ Global - records
   // -----------------------------------------------------------------------
 
-  /** GET /kzglobal/records (limit/offset/sort) */
+  /** GET /global/records (limit/offset/sort) */
   virtual bool GetKzRecords(FKZ_ResponseCallback callback, int limit = 0,
                             int offset = 0, const char *sort = "",
                             void *data = nullptr) = 0;
 
-  /** GET /kzglobal/records/recent (limit/offset/sort) */
+  /** GET /global/records/recent (limit/offset/sort) */
   virtual bool GetKzRecentRecords(FKZ_ResponseCallback callback, int limit = 0,
                                   int offset = 0, const char *sort = "",
                                   void *data = nullptr) = 0;
 
-  /** GET /kzglobal/records/worldrecords (limit/offset/sort) */
+  /** GET /global/records/worldrecords (limit/offset/sort) */
   virtual bool GetKzWorldRecords(FKZ_ResponseCallback callback, int limit = 0,
                                  int offset = 0, const char *sort = "",
                                  void *data = nullptr) = 0;
 
-  /** GET /kzglobal/records/leaderboard/{mapname} (limit/offset/sort) */
+  /** GET /global/records/leaderboard/{mapname} (limit/offset/sort) */
   virtual bool GetKzLeaderboard(const char *mapname,
                                 FKZ_ResponseCallback callback, int limit = 0,
                                 int offset = 0, const char *sort = "",
                                 void *data = nullptr) = 0;
 
-  /** GET /kzglobal/records/{id} */
+  /** GET /global/records/{id} */
   virtual bool GetKzRecord(int id, FKZ_ResponseCallback callback,
                            void *data = nullptr) = 0;
 
@@ -164,28 +164,28 @@ public:
   // KZ Global - players
   // -----------------------------------------------------------------------
 
-  /** GET /kzglobal/players (limit/offset/sort) */
+  /** GET /global/players (limit/offset/sort) */
   virtual bool GetKzPlayers(FKZ_ResponseCallback callback, int limit = 0,
                             int offset = 0, const char *sort = "",
                             void *data = nullptr) = 0;
 
-  /** GET /kzglobal/players/{steamid} */
+  /** GET /global/players/{steamid} */
   virtual bool GetKzPlayer(const char *steamid, FKZ_ResponseCallback callback,
                            void *data = nullptr) = 0;
 
-  /** GET /kzglobal/players/{steamid}/records (limit/offset/sort) */
+  /** GET /global/players/{steamid}/records (limit/offset/sort) */
   virtual bool GetKzPlayerRecords(const char *steamid,
                                   FKZ_ResponseCallback callback, int limit = 0,
                                   int offset = 0, const char *sort = "",
                                   void *data = nullptr) = 0;
 
-  /** GET /kzglobal/players/{steamid}/pbs (limit/offset/sort) */
+  /** GET /global/players/{steamid}/pbs (limit/offset/sort) */
   virtual bool GetKzPlayerPBs(const char *steamid,
                               FKZ_ResponseCallback callback, int limit = 0,
                               int offset = 0, const char *sort = "",
                               void *data = nullptr) = 0;
 
-  /** GET /kzglobal/players/{steamid}/completions (limit/offset/sort) */
+  /** GET /global/players/{steamid}/completions (limit/offset/sort) */
   virtual bool GetKzPlayerCompletions(const char *steamid,
                                       FKZ_ResponseCallback callback,
                                       int limit = 0, int offset = 0,
@@ -196,22 +196,22 @@ public:
   // KZ Global - maps
   // -----------------------------------------------------------------------
 
-  /** GET /kzglobal/maps (limit/offset/sort) */
+  /** GET /global/maps (limit/offset/sort) */
   virtual bool GetKzMaps(FKZ_ResponseCallback callback, int limit = 0,
                          int offset = 0, const char *sort = "",
                          void *data = nullptr) = 0;
 
-  /** GET /kzglobal/maps/{mapname} */
+  /** GET /global/maps/{mapname} */
   virtual bool GetKzMap(const char *mapname, FKZ_ResponseCallback callback,
                         void *data = nullptr) = 0;
 
-  /** GET /kzglobal/maps/{mapname}/records (limit/offset/sort) */
+  /** GET /global/maps/{mapname}/records (limit/offset/sort) */
   virtual bool GetKzMapRecords(const char *mapname,
                                FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
                                void *data = nullptr) = 0;
 
-  /** GET /kzglobal/maps/{mapname}/courses (limit/offset/sort) */
+  /** GET /global/maps/{mapname}/courses (limit/offset/sort) */
   virtual bool GetKzMapCourses(const char *mapname,
                                FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
@@ -221,12 +221,12 @@ public:
   // KZ Global - servers
   // -----------------------------------------------------------------------
 
-  /** GET /kzglobal/servers (limit/offset/sort) */
+  /** GET /global/servers (limit/offset/sort) */
   virtual bool GetKzServers(FKZ_ResponseCallback callback, int limit = 0,
                             int offset = 0, const char *sort = "",
                             void *data = nullptr) = 0;
 
-  /** GET /kzglobal/servers/{id} */
+  /** GET /global/servers/{id} */
   virtual bool GetKzServer(int id, FKZ_ResponseCallback callback,
                            void *data = nullptr) = 0;
 
@@ -234,21 +234,21 @@ public:
   // KZ Global - bans
   // -----------------------------------------------------------------------
 
-  /** GET /kzglobal/bans (limit/offset/sort) */
+  /** GET /global/bans (limit/offset/sort) */
   virtual bool GetKzBans(FKZ_ResponseCallback callback, int limit = 0,
                          int offset = 0, const char *sort = "",
                          void *data = nullptr) = 0;
 
-  /** GET /kzglobal/bans/active (limit/offset/sort) */
+  /** GET /global/bans/active (limit/offset/sort) */
   virtual bool GetKzActiveBans(FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
                                void *data = nullptr) = 0;
 
-  /** GET /kzglobal/bans/{id} */
+  /** GET /global/bans/{id} */
   virtual bool GetKzBan(int id, FKZ_ResponseCallback callback,
                         void *data = nullptr) = 0;
 
-  /** GET /kzglobal/bans/player/{steamid} (limit/offset/sort) */
+  /** GET /global/bans/player/{steamid} (limit/offset/sort) */
   virtual bool GetKzPlayerBans(const char *steamid,
                                FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
@@ -258,21 +258,21 @@ public:
   // KZ Local (CS:GO 128/64 tick)
   // -----------------------------------------------------------------------
 
-  /** GET /kzlocal/maps (limit/offset/sort) */
+  /** GET /local/gokz/maps (limit/offset/sort) */
   virtual bool GetLocalMaps(FKZ_ResponseCallback callback, int limit = 0,
                             int offset = 0, const char *sort = "",
                             void *data = nullptr) = 0;
 
-  /** GET /kzlocal/maps/{mapname} */
+  /** GET /local/gokz/maps/{mapname} */
   virtual bool GetLocalMap(const char *mapname, FKZ_ResponseCallback callback,
                            void *data = nullptr) = 0;
 
-  /** GET /kzlocal/records (limit/offset/sort) */
+  /** GET /local/gokz/records (limit/offset/sort) */
   virtual bool GetLocalRecords(FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
                                void *data = nullptr) = 0;
 
-  /** GET /kzlocal/players (limit/offset/sort) */
+  /** GET /local/gokz/players (limit/offset/sort) */
   virtual bool GetLocalPlayers(FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
                                void *data = nullptr) = 0;
@@ -281,22 +281,22 @@ public:
   // KZ Local CS2
   // -----------------------------------------------------------------------
 
-  /** GET /kzlocal-cs2/maps (limit/offset/sort) */
+  /** GET /local/cs2kz/maps (limit/offset/sort) */
   virtual bool GetLocalCS2Maps(FKZ_ResponseCallback callback, int limit = 0,
                                int offset = 0, const char *sort = "",
                                void *data = nullptr) = 0;
 
-  /** GET /kzlocal-cs2/records (limit/offset/sort) */
+  /** GET /local/cs2kz/records (limit/offset/sort) */
   virtual bool GetLocalCS2Records(FKZ_ResponseCallback callback, int limit = 0,
                                   int offset = 0, const char *sort = "",
                                   void *data = nullptr) = 0;
 
-  /** GET /kzlocal-cs2/players (limit/offset/sort) */
+  /** GET /local/cs2kz/players (limit/offset/sort) */
   virtual bool GetLocalCS2Players(FKZ_ResponseCallback callback, int limit = 0,
                                   int offset = 0, const char *sort = "",
                                   void *data = nullptr) = 0;
 
-  /** GET /kzlocal-cs2/stats */
+  /** GET /local/cs2kz/stats */
   virtual bool GetLocalCS2Stats(FKZ_ResponseCallback callback,
                                 void *data = nullptr) = 0;
 };

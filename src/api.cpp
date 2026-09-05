@@ -182,172 +182,172 @@ bool FKZApi::GetMap(const char *mapname, FKZ_ResponseCallback callback, void *da
 // KZ Global - records
 bool FKZApi::GetKzRecords(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/records", callback, limit, offset, sort, data);
+	return GetCollection("/global/records", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzRecentRecords(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/records/recent", callback, limit, offset, sort, data);
+	return GetCollection("/global/records/recent", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzWorldRecords(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/records/worldrecords", callback, limit, offset, sort, data);
+	return GetCollection("/global/records/worldrecords", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzLeaderboard(const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[192];
-	snprintf(base, sizeof(base), "/kzglobal/records/leaderboard/%s", mapname);
+	snprintf(base, sizeof(base), "/global/records/leaderboard/%s", mapname);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzRecord(int id, FKZ_ResponseCallback callback, void *data)
 {
 	char path[96];
-	snprintf(path, sizeof(path), "/kzglobal/records/%d", id);
+	snprintf(path, sizeof(path), "/global/records/%d", id);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 // KZ Global - players
 bool FKZApi::GetKzPlayers(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/players", callback, limit, offset, sort, data);
+	return GetCollection("/global/players", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzPlayer(const char *steamid, FKZ_ResponseCallback callback, void *data)
 {
 	char path[96];
-	snprintf(path, sizeof(path), "/kzglobal/players/%s", steamid);
+	snprintf(path, sizeof(path), "/global/players/%s", steamid);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 bool FKZApi::GetKzPlayerRecords(const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[128];
-	snprintf(base, sizeof(base), "/kzglobal/players/%s/records", steamid);
+	snprintf(base, sizeof(base), "/global/players/%s/records", steamid);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzPlayerPBs(const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[128];
-	snprintf(base, sizeof(base), "/kzglobal/players/%s/pbs", steamid);
+	snprintf(base, sizeof(base), "/global/players/%s/pbs", steamid);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzPlayerCompletions(const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[128];
-	snprintf(base, sizeof(base), "/kzglobal/players/%s/completions", steamid);
+	snprintf(base, sizeof(base), "/global/players/%s/completions", steamid);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 // KZ Global - maps
 bool FKZApi::GetKzMaps(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/maps", callback, limit, offset, sort, data);
+	return GetCollection("/global/maps", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzMap(const char *mapname, FKZ_ResponseCallback callback, void *data)
 {
 	char path[192];
-	snprintf(path, sizeof(path), "/kzglobal/maps/%s", mapname);
+	snprintf(path, sizeof(path), "/global/maps/%s", mapname);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 bool FKZApi::GetKzMapRecords(const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[192];
-	snprintf(base, sizeof(base), "/kzglobal/maps/%s/records", mapname);
+	snprintf(base, sizeof(base), "/global/maps/%s/records", mapname);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzMapCourses(const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[192];
-	snprintf(base, sizeof(base), "/kzglobal/maps/%s/courses", mapname);
+	snprintf(base, sizeof(base), "/global/maps/%s/courses", mapname);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 // KZ Global - servers
 bool FKZApi::GetKzServers(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/servers", callback, limit, offset, sort, data);
+	return GetCollection("/global/servers", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzServer(int id, FKZ_ResponseCallback callback, void *data)
 {
 	char path[96];
-	snprintf(path, sizeof(path), "/kzglobal/servers/%d", id);
+	snprintf(path, sizeof(path), "/global/servers/%d", id);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 // KZ Global - bans
 bool FKZApi::GetKzBans(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/bans", callback, limit, offset, sort, data);
+	return GetCollection("/global/bans", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzActiveBans(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzglobal/bans/active", callback, limit, offset, sort, data);
+	return GetCollection("/global/bans/active", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetKzBan(int id, FKZ_ResponseCallback callback, void *data)
 {
 	char path[96];
-	snprintf(path, sizeof(path), "/kzglobal/bans/%d", id);
+	snprintf(path, sizeof(path), "/global/bans/%d", id);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 bool FKZApi::GetKzPlayerBans(const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	char base[96];
-	snprintf(base, sizeof(base), "/kzglobal/bans/player/%s", steamid);
+	snprintf(base, sizeof(base), "/global/bans/player/%s", steamid);
 	return GetCollection(base, callback, limit, offset, sort, data);
 }
 
 // KZ Local (CS:GO 128/64 tick)
 bool FKZApi::GetLocalMaps(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal/maps", callback, limit, offset, sort, data);
+	return GetCollection("/local/gokz/maps", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetLocalMap(const char *mapname, FKZ_ResponseCallback callback, void *data)
 {
 	char path[160];
-	snprintf(path, sizeof(path), "/kzlocal/maps/%s", mapname);
+	snprintf(path, sizeof(path), "/local/gokz/maps/%s", mapname);
 	return Dispatch("GET", path, nullptr, callback, data);
 }
 
 bool FKZApi::GetLocalRecords(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal/records", callback, limit, offset, sort, data);
+	return GetCollection("/local/gokz/records", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetLocalPlayers(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal/players", callback, limit, offset, sort, data);
+	return GetCollection("/local/gokz/players", callback, limit, offset, sort, data);
 }
 
 // KZ Local CS2
 bool FKZApi::GetLocalCS2Maps(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal-cs2/maps", callback, limit, offset, sort, data);
+	return GetCollection("/local/cs2kz/maps", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetLocalCS2Records(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal-cs2/records", callback, limit, offset, sort, data);
+	return GetCollection("/local/cs2kz/records", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetLocalCS2Players(FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
-	return GetCollection("/kzlocal-cs2/players", callback, limit, offset, sort, data);
+	return GetCollection("/local/cs2kz/players", callback, limit, offset, sort, data);
 }
 
 bool FKZApi::GetLocalCS2Stats(FKZ_ResponseCallback callback, void *data)
 {
-	return Dispatch("GET", "/kzlocal-cs2/stats", nullptr, callback, data);
+	return Dispatch("GET", "/local/cs2kz/stats", nullptr, callback, data);
 }

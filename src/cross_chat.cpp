@@ -5,6 +5,7 @@
  * Receive path keeps one long-poll open against the API and prints incoming lines.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -36,14 +37,17 @@
 
 #define HUD_PRINTTALK 3 // TextMsg destination: the chat area
 
-#define CHAT_RETRY_SECONDS          3.0
-#define CHAT_STREAM_TIMEOUT_SECONDS 60 // > the API's ~25s park window
-#define CHAT_MAX_PARSE_FAILURES     3  // unreadable replies tolerated before resyncing
+#define CHAT_RETRY_SECONDS           3.0
+#define CHAT_STREAM_TIMEOUT_SECONDS  60   // > the API's ~25s park window
+#define CHAT_STREAM_DEADLINE_SECONDS 70.0 // > the request's own timeout, so only a lost completion trips this
+#define CHAT_MAX_PARSE_FAILURES      3    // unreadable replies tolerated before resyncing
 
-static int g_chatCursor = -1;  // last relay id seen (-1 = needs handshake)
-static bool g_streamActive;    // a long-poll request is in flight
-static double g_nextRetryTime; // earliest time to (re)open the stream
-static int g_parseFailures;    // consecutive replies we could not read
+static int g_chatCursor = -1;    // last relay id seen (-1 = needs handshake)
+static bool g_streamActive;      // a long-poll request is in flight
+static double g_streamStartTime; // time the in-flight poll was opened
+static uint32 g_streamGen;       // bumped per poll; orphans a completion the watchdog gave up on
+static double g_nextRetryTime;   // earliest time to (re)open the stream
+static int g_parseFailures;      // consecutive replies we could not read
 static bool g_muted[MAXPLAYERS + 1];
 
 // Routes a message to a fixed set of player slots.
@@ -317,8 +321,14 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);
 }
 
-static void OnChatStream(bool /*success*/, int statusCode, const char *body, uint32 /*len*/, void * /*data*/)
+static void OnChatStream(bool /*success*/, int statusCode, const char *body, uint32 /*len*/, void *data)
 {
+	// A poll the watchdog already replaced; its successor owns the stream state now.
+	if ((uint32)(uintptr_t)data != g_streamGen)
+	{
+		return;
+	}
+
 	g_streamActive = false;
 
 	if (statusCode != 200)
@@ -378,9 +388,11 @@ static void StartChatStream()
 	char url[1024];
 	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_Config.apiUrl, g_chatCursor, ip, port);
 
-	if (g_HttpClient.Request("GET", url, nullptr, CHAT_STREAM_TIMEOUT_SECONDS, OnChatStream, nullptr))
+	void *gen = (void *)(uintptr_t)(++g_streamGen);
+	if (g_HttpClient.Request("GET", url, nullptr, CHAT_STREAM_TIMEOUT_SECONDS, OnChatStream, gen))
 	{
 		g_streamActive = true;
+		g_streamStartTime = Plat_FloatTime();
 	}
 	else
 	{
@@ -390,11 +402,20 @@ static void StartChatStream()
 
 void CrossChat_Tick(bool hasHumans)
 {
-	if (g_Config.apiUrl[0] == '\0' || !hasHumans || g_streamActive)
+	if (g_Config.apiUrl[0] == '\0')
 	{
 		return;
 	}
-	if (Plat_FloatTime() < g_nextRetryTime)
+
+	// A completion that never arrives would otherwise leave g_streamActive set forever and silently kill cross-chat.
+	// Checked before the hasHumans gate so an empty server does not sit in that state until someone joins.
+	if (g_streamActive && Plat_FloatTime() - g_streamStartTime > CHAT_STREAM_DEADLINE_SECONDS)
+	{
+		META_CONPRINTF("[FKZ] chat stream stalled past %.0fs, reopening\n", CHAT_STREAM_DEADLINE_SECONDS);
+		g_streamActive = false; // StartChatStream bumps the generation, orphaning the old completion
+	}
+
+	if (!hasHumans || g_streamActive || Plat_FloatTime() < g_nextRetryTime)
 	{
 		return;
 	}

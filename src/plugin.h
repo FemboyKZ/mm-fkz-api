@@ -26,15 +26,18 @@ public:
 	void OnPluginLoad(PluginId id) override;
 	void OnPluginUnload(PluginId id) override;
 
-	// SourceHook callbacks
-	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
-	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
-	void Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
-	void Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, const char *pszAddress,
-								bool bFakePlayer);
-	void Hook_StartupServer(const GameSessionConfiguration_t &config, ISource2WorldSession *, const char *);
-	void Hook_ServerHibernationUpdate(bool bHibernating);
-	void Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
+	MMSPlugin();
+
+	// KHook callbacks
+	KHook::Return<void> Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick);
+	KHook::Return<void> Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
+	KHook::Return<void> Hook_ClientDisconnect(ISource2GameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
+											  uint64 xuid, const char *pszNetworkID);
+	KHook::Return<void> Hook_OnClientConnected(ISource2GameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID,
+											   const char *pszAddress, bool bFakePlayer);
+	KHook::Return<void> Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *, const char *);
+	KHook::Return<void> Hook_ServerHibernationUpdate(ISource2Server *, bool bHibernating);
+	KHook::Return<void> Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 
 public:
 	const char *GetAuthor()
@@ -80,6 +83,14 @@ public:
 private:
 	double m_lastReportTime;
 	bool m_serverActive;
+
+	KHook::Virtual<ISource2Server, void, bool, bool, bool> m_GameFrame;
+	KHook::Virtual<ISource2Server, void, bool> m_ServerHibernationUpdate;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, char const *, int, uint64> m_ClientPutInServer;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64, const char *> m_ClientDisconnect;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, const char *, uint64, const char *, const char *, bool> m_OnClientConnected;
+	KHook::Virtual<INetworkServerService, void, const GameSessionConfiguration_t &, ISource2WorldSession *, const char *> m_StartupServer;
+	KHook::Virtual<ICvar, void, ConCommandRef, const CCommandContext &, const CCommand &> m_DispatchConCommand;
 };
 
 extern MMSPlugin g_ThisPlugin;

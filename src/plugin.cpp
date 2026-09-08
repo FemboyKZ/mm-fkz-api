@@ -34,14 +34,16 @@ class GameSessionConfiguration_t
 MMSPlugin g_ThisPlugin;
 PLUGIN_EXPOSE(MMSPlugin, g_ThisPlugin);
 
-SH_DECL_HOOK3_void(ISource2Server, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
-SH_DECL_HOOK1_void(ISource2Server, ServerHibernationUpdate, SH_NOATTRIB, 0, bool);
-SH_DECL_HOOK4_void(ISource2GameClients, ClientPutInServer, SH_NOATTRIB, 0, CPlayerSlot, char const *, int, uint64);
-SH_DECL_HOOK5_void(ISource2GameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64,
-				   const char *);
-SH_DECL_HOOK6_void(ISource2GameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, const char *, uint64, const char *, const char *, bool);
-SH_DECL_HOOK3_void(INetworkServerService, StartupServer, SH_NOATTRIB, 0, const GameSessionConfiguration_t &, ISource2WorldSession *, const char *);
-SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandRef, const CCommandContext &, const CCommand &);
+MMSPlugin::MMSPlugin()
+	: m_GameFrame(&ISource2Server::GameFrame, this, nullptr, &MMSPlugin::Hook_GameFrame),
+	  m_ServerHibernationUpdate(&ISource2Server::ServerHibernationUpdate, this, nullptr, &MMSPlugin::Hook_ServerHibernationUpdate),
+	  m_ClientPutInServer(&ISource2GameClients::ClientPutInServer, this, nullptr, &MMSPlugin::Hook_ClientPutInServer),
+	  m_ClientDisconnect(&ISource2GameClients::ClientDisconnect, this, nullptr, &MMSPlugin::Hook_ClientDisconnect),
+	  m_OnClientConnected(&ISource2GameClients::OnClientConnected, this, nullptr, &MMSPlugin::Hook_OnClientConnected),
+	  m_StartupServer(&INetworkServerService::StartupServer, this, nullptr, &MMSPlugin::Hook_StartupServer),
+	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &MMSPlugin::Hook_DispatchConCommand, nullptr)
+{
+}
 
 bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
@@ -75,13 +77,13 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	}
 
 	// Register hooks
-	SH_ADD_HOOK_MEMFUNC(ISource2Server, GameFrame, g_pSource2Server, this, &MMSPlugin::Hook_GameFrame, true);
-	SH_ADD_HOOK_MEMFUNC(ISource2Server, ServerHibernationUpdate, g_pSource2Server, this, &MMSPlugin::Hook_ServerHibernationUpdate, true);
-	SH_ADD_HOOK_MEMFUNC(ISource2GameClients, ClientPutInServer, g_pSource2GameClients, this, &MMSPlugin::Hook_ClientPutInServer, true);
-	SH_ADD_HOOK_MEMFUNC(ISource2GameClients, ClientDisconnect, g_pSource2GameClients, this, &MMSPlugin::Hook_ClientDisconnect, true);
-	SH_ADD_HOOK_MEMFUNC(ISource2GameClients, OnClientConnected, g_pSource2GameClients, this, &MMSPlugin::Hook_OnClientConnected, true);
-	SH_ADD_HOOK_MEMFUNC(INetworkServerService, StartupServer, g_pNetworkServerService, this, &MMSPlugin::Hook_StartupServer, true);
-	SH_ADD_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this, &MMSPlugin::Hook_DispatchConCommand, false);
+	m_GameFrame.Add(g_pSource2Server);
+	m_ServerHibernationUpdate.Add(g_pSource2Server);
+	m_ClientPutInServer.Add(g_pSource2GameClients);
+	m_ClientDisconnect.Add(g_pSource2GameClients);
+	m_OnClientConnected.Add(g_pSource2GameClients);
+	m_StartupServer.Add(g_pNetworkServerService);
+	m_DispatchConCommand.Add(g_pCVar);
 
 	// Late load: server is already running
 	if (late)
@@ -98,13 +100,13 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 bool MMSPlugin::Unload(char *error, size_t maxlen)
 {
-	SH_REMOVE_HOOK_MEMFUNC(ISource2Server, GameFrame, g_pSource2Server, this, &MMSPlugin::Hook_GameFrame, true);
-	SH_REMOVE_HOOK_MEMFUNC(ISource2Server, ServerHibernationUpdate, g_pSource2Server, this, &MMSPlugin::Hook_ServerHibernationUpdate, true);
-	SH_REMOVE_HOOK_MEMFUNC(ISource2GameClients, ClientPutInServer, g_pSource2GameClients, this, &MMSPlugin::Hook_ClientPutInServer, true);
-	SH_REMOVE_HOOK_MEMFUNC(ISource2GameClients, ClientDisconnect, g_pSource2GameClients, this, &MMSPlugin::Hook_ClientDisconnect, true);
-	SH_REMOVE_HOOK_MEMFUNC(ISource2GameClients, OnClientConnected, g_pSource2GameClients, this, &MMSPlugin::Hook_OnClientConnected, true);
-	SH_REMOVE_HOOK_MEMFUNC(INetworkServerService, StartupServer, g_pNetworkServerService, this, &MMSPlugin::Hook_StartupServer, true);
-	SH_REMOVE_HOOK_MEMFUNC(ICvar, DispatchConCommand, g_pCVar, this, &MMSPlugin::Hook_DispatchConCommand, false);
+	m_GameFrame.Remove(g_pSource2Server);
+	m_ServerHibernationUpdate.Remove(g_pSource2Server);
+	m_ClientPutInServer.Remove(g_pSource2GameClients);
+	m_ClientDisconnect.Remove(g_pSource2GameClients);
+	m_OnClientConnected.Remove(g_pSource2GameClients);
+	m_StartupServer.Remove(g_pNetworkServerService);
+	m_DispatchConCommand.Remove(g_pCVar);
 
 	g_HttpClient.ReleasePending();
 	Database_Cleanup();
@@ -149,7 +151,8 @@ void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret)
 
 // Hooks
 
-void MMSPlugin::Hook_StartupServer(const GameSessionConfiguration_t &config, ISource2WorldSession *, const char *)
+KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,
+												  const char *)
 {
 	g_pGlobals = g_SMAPI->GetCGlobals();
 	m_serverActive = true;
@@ -161,15 +164,17 @@ void MMSPlugin::Hook_StartupServer(const GameSessionConfiguration_t &config, ISo
 	m_lastReportTime = Plat_FloatTime() + 2.0 - g_Config.interval;
 
 	META_CONPRINTF("[FKZ] Server started, reporting active\n");
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, const char *pszAddress,
-									   bool bFakePlayer)
+KHook::Return<void> MMSPlugin::Hook_OnClientConnected(ISource2GameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid,
+													  const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
 {
 	g_PlayerManager.OnClientConnected(slot.Get(), pszName, xuid, pszAddress, bFakePlayer);
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+KHook::Return<void> MMSPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
 	g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
 	CS2KZ_ResetPlayer(slot.Get());
@@ -184,10 +189,11 @@ void MMSPlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, in
 	{
 		m_lastReportTime = 0.0;
 	}
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName, uint64 xuid,
-									  const char *pszNetworkID)
+KHook::Return<void> MMSPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
+													 uint64 xuid, const char *pszNetworkID)
 {
 	int s = slot.Get();
 	bool wasFakeClient = g_PlayerManager.GetPlayer(s).isBot;
@@ -201,21 +207,23 @@ void MMSPlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionRea
 	{
 		SendHibernate();
 	}
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_ServerHibernationUpdate(bool bHibernating)
+KHook::Return<void> MMSPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bool bHibernating)
 {
 	if (bHibernating && g_Config.apiUrl[0] != '\0')
 	{
 		SendHibernate();
 	}
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
+KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick)
 {
 	if (!m_serverActive)
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	if (!g_HttpClient.IsReady())
@@ -229,7 +237,7 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 
 	if (g_Config.apiUrl[0] == '\0')
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	int humans = g_PlayerManager.GetHumanPlayerCount();
@@ -243,7 +251,7 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 	// Don't report while idle (no human players / server hibernating).
 	if (humans == 0)
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	double now = Plat_FloatTime();
@@ -252,10 +260,11 @@ void MMSPlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
 		m_lastReportTime = now;
 		SendReport();
 	}
+	return {KHook::Action::Ignore};
 }
 
-void MMSPlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+KHook::Return<void> MMSPlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
 	CrossChat_OnDispatchConCommand(cmd, ctx, args);
-	RETURN_META(MRES_IGNORED);
+	return {KHook::Action::Ignore};
 }

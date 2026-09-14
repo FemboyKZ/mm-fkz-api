@@ -21,6 +21,7 @@
 #include "plugin.h"
 
 #include "../vendor/sql_mm/src/public/sql_mm.h"
+#include "interfaces/cs2admin/ics2admin.h"
 
 #include <engine/igameeventsystem.h>
 #include <irecipientfilter.h>
@@ -308,6 +309,14 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 
 	// Other command triggers are not relayed.
 	if (isCommand)
+	{
+		return false;
+	}
+
+	// cs2admin superseding a gagged player's say doesn't stop this hook from running, so ask it directly.
+	// Looked up per message rather than cached, so an unloaded cs2admin never leaves a dangling pointer.
+	ICS2Admin *admin = static_cast<ICS2Admin *>(g_SMAPI->MetaFactory(CS2ADMIN_INTERFACE, nullptr, nullptr));
+	if (admin && admin->IsGagged(slot))
 	{
 		return false;
 	}

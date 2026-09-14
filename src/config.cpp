@@ -21,6 +21,8 @@ PluginConfig::PluginConfig()
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;
+	strcpy(commandPrefix, "!");
+	strcpy(silentCommandPrefix, "/");
 }
 
 // Config file parser: key "value" format
@@ -112,6 +114,8 @@ void PluginConfig::Load()
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;
+	strcpy(commandPrefix, "!");
+	strcpy(silentCommandPrefix, "/");
 
 	// Build absolute path using Metamod's game base directory
 	const char *baseDir = g_SMAPI->GetBaseDir();
@@ -202,6 +206,14 @@ void PluginConfig::Load()
 			else if (strcmp(key, "db_port") == 0)
 			{
 				dbPort = atoi(value);
+			}
+			else if (strcmp(key, "command_prefix") == 0)
+			{
+				snprintf(commandPrefix, sizeof(commandPrefix), "%s", value);
+			}
+			else if (strcmp(key, "silent_command_prefix") == 0)
+			{
+				snprintf(silentCommandPrefix, sizeof(silentCommandPrefix), "%s", value);
 			}
 		}
 	}

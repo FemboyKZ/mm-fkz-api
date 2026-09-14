@@ -17,6 +17,10 @@ struct PluginConfig
 	char dbPass[128];
 	int dbPort;
 
+	// Each character is an accepted prefix.
+	char commandPrefix[8];       // normal (message stays visible)
+	char silentCommandPrefix[8]; // silent (message suppressed)
+
 	PluginConfig();
 	void Load();
 };

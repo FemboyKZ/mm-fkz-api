@@ -157,7 +157,10 @@ static void NotifyMuteState(int slot, bool muted)
 	filter.AddRecipient(slot);
 	if (muted)
 	{
-		SendChatLine(filter, " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages hidden. Type !crosschat to show.");
+		char prefix = g_Config.commandPrefix[0] ? g_Config.commandPrefix[0] : g_Config.silentCommandPrefix[0];
+		char line[128];
+		snprintf(line, sizeof(line), " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages hidden. Type %ccrosschat to show.", prefix);
+		SendChatLine(filter, line);
 	}
 	else
 	{
@@ -291,17 +294,20 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		return false;
 	}
 
+	bool silent = strchr(g_Config.silentCommandPrefix, text[0]) != nullptr;
+	bool isCommand = silent || strchr(g_Config.commandPrefix, text[0]) != nullptr;
+
 	// Mute toggle.
-	if (V_stricmp(text.c_str(), "!crosschat") == 0 || V_stricmp(text.c_str(), "/crosschat") == 0)
+	if (isCommand && V_stricmp(text.c_str() + 1, "crosschat") == 0)
 	{
 		g_muted[slot] = !g_muted[slot];
 		NotifyMuteState(slot, g_muted[slot]);
 		SavePref(slot);
-		return text[0] == '/';
+		return silent;
 	}
 
 	// Other command triggers are not relayed.
-	if (text[0] == '!' || text[0] == '/')
+	if (isCommand)
 	{
 		return false;
 	}

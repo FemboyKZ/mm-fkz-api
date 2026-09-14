@@ -13,7 +13,7 @@
 //            ncoming messages are printed via SayText2.
 //            CrossChat_Tick (re)opens the poll each game frame.
 
-// Returns true when the chat line should be hidden (the silent /crosschat toggle).
+// Returns true when the chat line should be hidden (crosschat toggle sent with the silent prefix).
 bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 
 // Called every game frame.

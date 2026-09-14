@@ -265,6 +265,5 @@ KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating,
 
 KHook::Return<void> MMSPlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	CrossChat_OnDispatchConCommand(cmd, ctx, args);
-	return {KHook::Action::Ignore};
+	return {CrossChat_OnDispatchConCommand(cmd, ctx, args) ? KHook::Action::Supersede : KHook::Action::Ignore};
 }

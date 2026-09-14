@@ -235,36 +235,36 @@ static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, 
 	}
 }
 
-void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
 	if (g_Config.apiUrl[0] == '\0' || !cmd.IsValidRef())
 	{
-		return;
+		return false;
 	}
 
 	// Public chat only; team chat stays local.
 	if (V_stricmp(cmd.GetName(), "say") != 0 || args.ArgC() < 2)
 	{
-		return;
+		return false;
 	}
 
 	int slot = ctx.GetPlayerSlot().Get();
 	if (slot < 0 || slot >= MAXPLAYERS)
 	{
-		return;
+		return false;
 	}
 
 	const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
 	if (!p.connected || p.isBot)
 	{
-		return;
+		return false;
 	}
 
 	// args.ArgS() is the remainder after "say", usually wrapped in quotes.
 	const char *raw = args.ArgS();
 	if (!raw)
 	{
-		return;
+		return false;
 	}
 	std::string text = raw;
 	if (text.size() >= 2 && text.front() == '"' && text.back() == '"')
@@ -283,12 +283,12 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	size_t begin = text.find_first_not_of(" \t");
 	if (begin == std::string::npos)
 	{
-		return;
+		return false;
 	}
 	text = text.substr(begin);
 	if (text.empty())
 	{
-		return;
+		return false;
 	}
 
 	// Mute toggle.
@@ -297,13 +297,13 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		g_muted[slot] = !g_muted[slot];
 		NotifyMuteState(slot, g_muted[slot]);
 		SavePref(slot);
-		return;
+		return text[0] == '/';
 	}
 
 	// Other command triggers are not relayed.
 	if (text[0] == '!' || text[0] == '/')
 	{
-		return;
+		return false;
 	}
 
 	char ip[64];
@@ -319,6 +319,7 @@ void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 
 	std::string url = std::string(g_Config.apiUrl) + "/chat/messages";
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);
+	return false;
 }
 
 static void OnChatStream(bool /*success*/, int statusCode, const char *body, uint32 /*len*/, void *data)

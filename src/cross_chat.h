@@ -13,7 +13,8 @@
 //            ncoming messages are printed via SayText2.
 //            CrossChat_Tick (re)opens the poll each game frame.
 
-void CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
+// Returns true when the chat line should be hidden (the silent /crosschat toggle).
+bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 
 // Called every game frame.
 // hasHumans gates the stream so empty servers hold noconnection.

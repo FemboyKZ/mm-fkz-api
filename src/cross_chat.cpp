@@ -126,8 +126,33 @@ static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
 	g_pNetworkMessages->DeallocateNetMessageAbstract(netmsg, data);
 }
 
-static void PrintCrossChat(const char *alias, const char *name, const char *message, bool muted)
+// Chat color codes are the bytes 0x01-0x10, a range that also covers newlines.
+// Relayed text is whatever another server's player typed or named themselves, so none of it may reach the line,
+// or it could recolor it or pass for the [alias] prefix.
+static std::string StripChatControls(const char *text)
 {
+	std::string out;
+	for (const char *p = text ? text : ""; *p; p++)
+	{
+		unsigned char c = static_cast<unsigned char>(*p);
+		if (c >= 0x01 && c <= 0x10)
+		{
+			continue;
+		}
+		out += *p;
+	}
+	return out;
+}
+
+static void PrintCrossChat(const char *rawAlias, const char *rawName, const char *rawMessage, bool muted)
+{
+	const std::string aliasText = StripChatControls(rawAlias);
+	const std::string nameText = StripChatControls(rawName);
+	const std::string messageText = StripChatControls(rawMessage);
+	const char *alias = aliasText.c_str();
+	const char *name = nameText.c_str();
+	const char *message = messageText.c_str();
+
 	CChatRecipientFilter filter;
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
@@ -259,7 +284,8 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	}
 
 	const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-	if (!p.connected || p.isBot)
+	// Not put in server yet means not a legitimate chat line, the same check cs2admin blocks on.
+	if (!p.connected || !p.inGame || p.isBot)
 	{
 		return false;
 	}

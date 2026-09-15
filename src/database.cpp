@@ -8,6 +8,8 @@
 
 #include "database.h"
 #include "config.h"
+#include "cross_chat.h"
+#include "player_manager.h"
 #include "plugin.h"
 
 #include <tier1/strtools.h>
@@ -47,6 +49,16 @@ static void OnMigrationDone(std::vector<ISQLQuery *> /*queries*/)
 {
 	g_dbReady = true;
 	META_CONPRINTF("[FKZ] Local database ready.\n");
+
+	// Anyone put in server before now, on a late load or ahead of a slow connect, had their prefs load skipped.
+	for (int slot = 0; slot < MAXPLAYERS; slot++)
+	{
+		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+		if (p.connected && p.inGame && !p.isBot)
+		{
+			CrossChat_LoadPrefs(slot, p.steamId64);
+		}
+	}
 }
 
 static void OnMigrationFail(std::string error, int failIndex)

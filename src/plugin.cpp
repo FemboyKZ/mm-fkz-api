@@ -23,6 +23,8 @@
 #include <eiface.h>
 #include <engine/igameeventsystem.h>
 #include <icvar.h>
+#include <ics2kz.h>
+#include <inetchannelinfo.h>
 #include <iserver.h>
 #include <networksystem/inetworkmessages.h>
 #include <tier0/platform.h>
@@ -33,6 +35,28 @@ class GameSessionConfiguration_t
 
 MMSPlugin g_ThisPlugin;
 PLUGIN_EXPOSE(MMSPlugin, g_ThisPlugin);
+
+// Players already on the server at a late load never pass through the connect hooks,
+// and without them the server reports as empty and cross-chat skips them.
+static void AddExistingPlayers()
+{
+	CS2KZ_Refresh();
+	for (int slot = 0; slot < MAXPLAYERS; slot++)
+	{
+		CPlayerSlot playerSlot(slot);
+		uint64 xuid = g_pEngineServer->GetClientXUID(playerSlot);
+		INetChannelInfo *netInfo = g_pEngineServer->GetPlayerNetInfo(playerSlot);
+		if (xuid == 0 || !netInfo)
+		{
+			continue;
+		}
+		// The engine has no name lookup by slot, cs2kz does. Without it the name fills in on the next connect.
+		const char *name = g_pCS2KZ ? g_pCS2KZ->GetPlayerName(slot) : "";
+		g_PlayerManager.OnClientConnected(slot, name, xuid, netInfo->GetAddress(), false);
+		g_PlayerManager.OnClientPutInServer(slot, name, 0, xuid);
+		CS2KZ_ResetPlayer(slot);
+	}
+}
 
 MMSPlugin::MMSPlugin()
 	: m_GameFrame(&ISource2Server::GameFrame, this, nullptr, &MMSPlugin::Hook_GameFrame),
@@ -93,6 +117,7 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 		m_serverActive = true;
 		g_ServerInfo.Cache();
 		m_lastReportTime = Plat_FloatTime();
+		AddExistingPlayers();
 	}
 
 	return true;

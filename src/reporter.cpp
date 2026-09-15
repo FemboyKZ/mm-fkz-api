@@ -19,6 +19,8 @@ static int g_successCount = 0;
 
 static void OnReportResponse(bool /*success*/, int statusCode, const char *body, void * /*data*/)
 {
+	CS2KZ_OnReportResult(statusCode == 200);
+
 	if (statusCode == 200)
 	{
 		if (g_failCount > 0)
@@ -66,10 +68,13 @@ void SendReport()
 
 	std::string payload = BuildPayloadJson();
 
-	// The per-mode deltas are captured in the payload now, reset to begin a new interval.
-	CS2KZ_ResetAllPlaytimeDeltas();
+	// The per-mode deltas are in the payload now, held aside until the POST is answered so a failure can give them back.
+	CS2KZ_TakePlaytimeDeltas();
 
-	g_FKZApi.PostServerStatus(payload.c_str(), OnReportResponse, NULL);
+	if (!g_FKZApi.PostServerStatus(payload.c_str(), OnReportResponse, NULL))
+	{
+		CS2KZ_OnReportResult(false);
+	}
 }
 
 void SendHibernate()

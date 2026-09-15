@@ -24,9 +24,9 @@ public:
 		m_callResult.Set(call, this, &HttpRequestContext::OnCompleted);
 	}
 
-	// Cancel a still-pending request (on unload).
-	// Does not invoke the handler and does not touch the owner's pending list.
-	void Cancel()
+	// Cancel a still-pending request (on unload) and report the failure, so the caller can free whatever it passed as userData.
+	// Does not touch the owner's pending list.
+	void CancelAndFail()
 	{
 		m_callResult.Cancel();
 		ISteamHTTP *http = g_HttpClient.SteamHTTP();
@@ -35,6 +35,11 @@ public:
 			http->ReleaseHTTPRequest(m_request);
 		}
 		m_request = INVALID_HTTPREQUEST_HANDLE;
+
+		if (m_handler)
+		{
+			m_handler(false, 0, "", 0, m_userData);
+		}
 	}
 
 private:
@@ -114,7 +119,7 @@ static EHTTPMethod MethodFromString(const char *method)
 	return k_EHTTPMethodGET;
 }
 
-HttpClient::HttpClient() : m_ready(false) {}
+HttpClient::HttpClient() : m_ready(false), m_releasing(false) {}
 
 bool HttpClient::Init()
 {
@@ -147,17 +152,35 @@ void HttpClient::OnContextFinished(HttpRequestContext *ctx)
 
 void HttpClient::ReleasePending()
 {
-	for (HttpRequestContext *ctx : m_pending)
+	// A failure handler can call back in here, and the second pass would free the contexts the first one is walking.
+	if (m_releasing)
 	{
-		ctx->Cancel();
+		return;
+	}
+	m_releasing = true;
+
+	// Swapped out first for the same reason, and so a handler cannot see a context that is about to be freed.
+	std::vector<HttpRequestContext *> pending;
+	pending.swap(m_pending);
+
+	for (HttpRequestContext *ctx : pending)
+	{
+		ctx->CancelAndFail();
 		delete ctx;
 	}
-	m_pending.clear();
+
 	m_ready = false;
+	m_releasing = false;
 }
 
 bool HttpClient::Request(const char *method, const char *url, const char *body, uint32 timeoutSec, HttpResponseHandler handler, void *userData)
 {
+	// A request dispatched from a failure handler during teardown would never complete.
+	if (m_releasing)
+	{
+		return false;
+	}
+
 	ISteamHTTP *http = m_steamAPI.SteamHTTP();
 	if (!http)
 	{

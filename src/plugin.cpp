@@ -87,6 +87,7 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	g_PlayerManager.Reset();
 	m_lastReportTime = 0.0;
 	m_serverActive = false;
+	m_hibernateSent = false;
 
 	g_Config.Load();
 
@@ -181,6 +182,7 @@ KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const
 {
 	g_pGlobals = g_SMAPI->GetCGlobals();
 	m_serverActive = true;
+	m_hibernateSent = false;
 
 	g_HttpClient.Init();
 	g_ServerInfo.Cache();
@@ -213,6 +215,7 @@ KHook::Return<void> MMSPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPl
 	if (type != 1 && g_Config.apiUrl[0] != '\0' && g_PlayerManager.GetHumanPlayerCount() == 1)
 	{
 		m_lastReportTime = 0.0;
+		m_hibernateSent = false;
 	}
 	return {KHook::Action::Ignore};
 }
@@ -221,15 +224,28 @@ KHook::Return<void> MMSPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPla
 													 uint64 xuid, const char *pszNetworkID)
 {
 	int s = slot.Get();
-	bool wasFakeClient = g_PlayerManager.GetPlayer(s).isBot;
+	const PlayerInfo &player = g_PlayerManager.GetPlayer(s);
+	bool wasInGame = player.connected && player.inGame && !player.isBot;
+
+	// The slot is cleared right below, so whatever this player accrued since the last report has to go out first.
+	if (wasInGame && g_Config.apiUrl[0] != '\0')
+	{
+		CS2KZ_SampleAll();
+		if (CS2KZ_HasPendingPlaytime(s))
+		{
+			SendReport();
+			m_lastReportTime = Plat_FloatTime();
+		}
+	}
 
 	g_PlayerManager.OnClientDisconnect(s);
 	CrossChat_OnClientDisconnect(s);
 	CS2KZ_ResetPlayer(s);
 
 	// Send hibernate signal when last human player leaves
-	if (!wasFakeClient && g_PlayerManager.GetHumanPlayerCount() == 0 && g_Config.apiUrl[0] != '\0')
+	if (wasInGame && g_PlayerManager.GetHumanPlayerCount() == 0 && g_Config.apiUrl[0] != '\0' && !m_hibernateSent)
 	{
+		m_hibernateSent = true;
 		SendHibernate();
 	}
 	return {KHook::Action::Ignore};
@@ -237,8 +253,14 @@ KHook::Return<void> MMSPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPla
 
 KHook::Return<void> MMSPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bool bHibernating)
 {
-	if (bHibernating && g_Config.apiUrl[0] != '\0')
+	if (!bHibernating)
 	{
+		m_hibernateSent = false;
+	}
+	// The last player leaving reaches us through ClientDisconnect as well, and one signal per emptying is enough.
+	else if (!m_hibernateSent && g_Config.apiUrl[0] != '\0')
+	{
+		m_hibernateSent = true;
 		SendHibernate();
 	}
 	return {KHook::Action::Ignore};
@@ -246,6 +268,8 @@ KHook::Return<void> MMSPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bo
 
 KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick)
 {
+	Database_RunFrame();
+
 	if (!m_serverActive)
 	{
 		return {KHook::Action::Ignore};

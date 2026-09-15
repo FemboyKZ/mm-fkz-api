@@ -43,6 +43,8 @@ struct ModePlaytime
 };
 
 static ModePlaytime s_playtime[MAXPLAYERS + 1];
+// Deltas already written into a report whose result is still unknown.
+static double s_sentSeconds[MAXPLAYERS + 1][MODE_COUNT];
 static double s_lastTick = 0.0;
 
 void CS2KZ_Refresh()
@@ -71,6 +73,8 @@ void CS2KZ_ResetPlayer(int slot)
 	}
 	memset(&s_playtime[slot], 0, sizeof(s_playtime[slot]));
 	s_playtime[slot].currentMode = -1;
+	// Whatever a report still owes for this slot belonged to the previous occupant.
+	memset(s_sentSeconds[slot], 0, sizeof(s_sentSeconds[slot]));
 }
 
 // The mode the player is in right now, or -1 when cs2kz has no mode for this slot.
@@ -141,12 +145,47 @@ void CS2KZ_Tick()
 	CS2KZ_SampleAll();
 }
 
-void CS2KZ_ResetAllPlaytimeDeltas()
+void CS2KZ_TakePlaytimeDeltas()
 {
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		memset(s_playtime[i].seconds, 0, sizeof(s_playtime[i].seconds));
+		for (int m = 0; m < MODE_COUNT; m++)
+		{
+			s_sentSeconds[i][m] += s_playtime[i].seconds[m];
+			s_playtime[i].seconds[m] = 0.0;
+		}
 	}
+}
+
+void CS2KZ_OnReportResult(bool accepted)
+{
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		for (int m = 0; m < MODE_COUNT; m++)
+		{
+			if (!accepted)
+			{
+				s_playtime[i].seconds[m] += s_sentSeconds[i][m];
+			}
+			s_sentSeconds[i][m] = 0.0;
+		}
+	}
+}
+
+bool CS2KZ_HasPendingPlaytime(int slot)
+{
+	if (slot < 0 || slot >= MAXPLAYERS)
+	{
+		return false;
+	}
+	for (int m = 0; m < MODE_COUNT; m++)
+	{
+		if (s_playtime[slot].seconds[m] > 0.0)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 std::string BuildCS2KZJson(int slot)

@@ -21,6 +21,7 @@
 static ISQLConnection *g_dbConnection = nullptr;
 static DatabaseType g_dbType = DatabaseType::None;
 static bool g_dbReady = false;
+static bool g_dbDestroyPending = false;
 
 // One row per player, keyed by steamID64.
 static const char *kCreatePrefsSqlite = "CREATE TABLE IF NOT EXISTS player_prefs ("
@@ -32,7 +33,7 @@ static const char *kCreatePrefsMySQL = "CREATE TABLE IF NOT EXISTS player_prefs 
 
 bool Database_IsReady()
 {
-	return g_dbReady && g_dbConnection != nullptr;
+	return g_dbReady && g_dbConnection != nullptr && !g_dbDestroyPending;
 }
 
 ISQLConnection *Database_GetConnection()
@@ -71,9 +72,8 @@ static void OnConnected(bool success)
 	if (!success)
 	{
 		META_CONPRINTF("[FKZ] Database connection failed.\n");
-		g_dbConnection->Destroy();
-		g_dbConnection = nullptr;
-		g_dbType = DatabaseType::None;
+		// Destroy() erases the connection from the vector sql_mm is iterating to reach this callback, so it waits for the next frame.
+		g_dbDestroyPending = true;
 		return;
 	}
 
@@ -124,6 +124,16 @@ void Database_Init()
 	}
 
 	g_dbConnection->Connect(OnConnected);
+}
+
+void Database_RunFrame()
+{
+	if (!g_dbDestroyPending)
+	{
+		return;
+	}
+	g_dbDestroyPending = false;
+	Database_Cleanup();
 }
 
 void Database_Cleanup()

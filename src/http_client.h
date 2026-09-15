@@ -38,6 +38,7 @@ public:
 	void RunCallbacks();
 
 	// Cancel and free all in-flight requests (call on unload).
+	// Each handler is invoked with a transport failure first, so callers can release what they passed as userData.
 	void ReleasePending();
 
 	ISteamHTTP *SteamHTTP()
@@ -51,6 +52,8 @@ public:
 private:
 	CSteamGameServerAPIContext m_steamAPI;
 	bool m_ready;
+	// Set while ReleasePending walks the list, so a handler calling back in cannot re-enter it or queue new work.
+	bool m_releasing;
 	std::vector<HttpRequestContext *> m_pending;
 };
 

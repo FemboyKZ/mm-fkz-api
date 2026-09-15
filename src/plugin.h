@@ -83,6 +83,8 @@ public:
 private:
 	double m_lastReportTime;
 	bool m_serverActive;
+	// One hibernate signal per emptying, both the last disconnect and the hibernation hook report the same one.
+	bool m_hibernateSent;
 
 	KHook::Virtual<ISource2Server, void, bool, bool, bool> m_GameFrame;
 	KHook::Virtual<ISource2Server, void, bool> m_ServerHibernationUpdate;

@@ -341,7 +341,6 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 
 	// cs2admin superseding a gagged player's say doesn't stop this hook from running, so ask it directly.
 	// Looked up per message rather than cached, so an unloaded cs2admin never leaves a dangling pointer.
-	// The same goes for a line it keeps private, like an admin typing a ban reason.
 	ICS2Admin *admin = static_cast<ICS2Admin *>(g_SMAPI->MetaFactory(CS2ADMIN_INTERFACE, nullptr, nullptr));
 	if (admin && (admin->IsGagged(slot) || admin->IsChatHidden(slot)))
 	{

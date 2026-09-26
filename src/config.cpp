@@ -16,8 +16,8 @@ PluginConfig::PluginConfig()
 	serverPort = 0;
 	interval = 10.0f;
 	dbDriver[0] = '\0';
-	dbDatabase[0] = '\0';
-	dbHost[0] = '\0';
+	strcpy(dbDatabase, "addons/fkz-api/data/prefs.sqlite3");
+	strcpy(dbHost, "localhost");
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;
@@ -109,8 +109,8 @@ void PluginConfig::Load()
 	serverPort = 0;
 	interval = 10.0f;
 	dbDriver[0] = '\0';
-	dbDatabase[0] = '\0';
-	dbHost[0] = '\0';
+	strcpy(dbDatabase, "addons/fkz-api/data/prefs.sqlite3");
+	strcpy(dbHost, "localhost");
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;

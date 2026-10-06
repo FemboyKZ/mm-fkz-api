@@ -23,7 +23,6 @@ def additionalDefines(context, binary, sdk):
 def additionalIncludes(context, binary, sdk):
     return [
         # Path should be absolute only!
-        os.path.join(context.currentSourcePath, "cs2kz-metamod", "src", "public"),
         os.path.join(context.currentSourcePath, "vendor", "mm-utils"),
     ]
 

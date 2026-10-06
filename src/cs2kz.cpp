@@ -14,7 +14,7 @@
 #include "player_manager.h"
 #include "plugin.h"
 #include <ISmmAPI.h>
-#include <ics2kz.h>
+#include "interfaces/cs2kz/ics2kz.h"
 #include <tier0/platform.h>
 
 ICS2KZ *g_pCS2KZ = NULL;

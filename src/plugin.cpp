@@ -23,7 +23,7 @@
 #include <eiface.h>
 #include <engine/igameeventsystem.h>
 #include <icvar.h>
-#include <ics2kz.h>
+#include "interfaces/cs2kz/ics2kz.h"
 #include <inetchannelinfo.h>
 #include <iserver.h>
 #include <networksystem/inetworkmessages.h>

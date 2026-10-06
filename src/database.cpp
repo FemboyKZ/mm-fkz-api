@@ -14,9 +14,9 @@
 
 #include <tier1/strtools.h>
 
-#include "../vendor/sql_mm/src/public/sql_mm.h"
-#include "../vendor/sql_mm/src/public/sqlite_mm.h"
-#include "../vendor/sql_mm/src/public/mysql_mm.h"
+#include "interfaces/sql_mm/sql_mm.h"
+#include "interfaces/sql_mm/sqlite_mm.h"
+#include "interfaces/sql_mm/mysql_mm.h"
 
 static ISQLConnection *g_dbConnection = nullptr;
 static DatabaseType g_dbType = DatabaseType::None;

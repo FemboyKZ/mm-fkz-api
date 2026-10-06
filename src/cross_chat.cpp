@@ -20,7 +20,7 @@
 #include "player_manager.h"
 #include "plugin.h"
 
-#include "../vendor/sql_mm/src/public/sql_mm.h"
+#include "interfaces/sql_mm/sql_mm.h"
 #include "interfaces/cs2admin/ics2admin.h"
 
 #include <engine/igameeventsystem.h>

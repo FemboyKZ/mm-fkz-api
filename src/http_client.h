@@ -43,14 +43,13 @@ public:
 
 	ISteamHTTP *SteamHTTP()
 	{
-		return m_steamAPI.SteamHTTP();
+		return SteamGameServerHTTP();
 	}
 
 	// Called by a context when it completes normally, to deregister itself.
 	void OnContextFinished(HttpRequestContext *ctx);
 
 private:
-	CSteamGameServerAPIContext m_steamAPI;
 	bool m_ready;
 	// Set while ReleasePending walks the list, so a handler calling back in cannot re-enter it or queue new work.
 	bool m_releasing;

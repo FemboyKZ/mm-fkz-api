@@ -128,12 +128,7 @@ bool HttpClient::Init()
 		return true;
 	}
 
-	m_ready = m_steamAPI.Init();
-	if (m_ready && !m_steamAPI.SteamHTTP())
-	{
-		m_ready = false;
-	}
-
+	m_ready = SteamHTTP() != nullptr;
 	return m_ready;
 }
 
@@ -181,17 +176,14 @@ bool HttpClient::Request(const char *method, const char *url, const char *body, 
 		return false;
 	}
 
-	ISteamHTTP *http = m_steamAPI.SteamHTTP();
+	ISteamHTTP *http = SteamHTTP();
 	if (!http)
 	{
-		// Try reinitializing the Steam API.
-		m_ready = m_steamAPI.Init();
-		http = m_steamAPI.SteamHTTP();
-		if (!http)
-		{
-			META_CONPRINTF("[FKZ] Steam HTTP not available, skipping %s %s\n", method, url);
-			return false;
-		}
+		META_CONPRINTF("[FKZ] Steam HTTP not available, skipping %s %s\n", method, url);
+		return false;
+	}
+	if (!m_ready)
+	{
 		m_ready = true;
 		META_CONPRINTF("[FKZ] Steam API recovered\n");
 	}

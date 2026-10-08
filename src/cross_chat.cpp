@@ -24,8 +24,8 @@
 #include "interfaces/cs2admin/ics2admin.h"
 
 #include <engine/igameeventsystem.h>
-#include <irecipientfilter.h>
 #include <networksystem/inetworkmessages.h>
+#include <recipientfilter.h>
 #include <tier0/platform.h>
 
 #include "thirdparty/nlohmann/json.hpp"
@@ -51,51 +51,10 @@ static double g_nextRetryTime;   // earliest time to (re)open the stream
 static int g_parseFailures;      // consecutive replies we could not read
 static bool g_muted[MAXPLAYERS + 1];
 
-// Routes a message to a fixed set of player slots.
-class CChatRecipientFilter : public IRecipientFilter
-{
-public:
-	NetChannelBufType_t GetNetworkBufType() const override
-	{
-		return BUF_RELIABLE;
-	}
-
-	bool IsInitMessage() const override
-	{
-		return false;
-	}
-
-	const CPlayerBitVec &GetRecipients() const override
-	{
-		return m_recipients;
-	}
-
-	CPlayerSlot GetPredictedPlayerSlot() const override
-	{
-		return CPlayerSlot(-1);
-	}
-
-	void AddRecipient(int slot)
-	{
-		if (slot >= 0 && slot < ABSOLUTE_PLAYER_LIMIT)
-		{
-			m_recipients.Set(slot);
-		}
-	}
-
-	bool Empty() const
-	{
-		return m_recipients.IsAllClear();
-	}
-
-private:
-	CPlayerBitVec m_recipients;
-};
-
 // Prints a chat line to everyone in the filter. Uses TextMsg/HUD_PRINTTALK
-static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
+static void SendChatLine(const CRecipientFilter &filter, const char *line)
 {
-	if (!g_pNetworkMessages || !g_pGameEventSystem || filter.Empty())
+	if (!g_pNetworkMessages || !g_pGameEventSystem || filter.GetRecipients().IsAllClear())
 	{
 		return;
 	}
@@ -122,7 +81,7 @@ static void SendChatLine(const CChatRecipientFilter &filter, const char *line)
 
 	// AllocateMessage hands back a pool allocated message, not a new'd object.
 	// It has to go back through DeallocateNetMessageAbstract. delete frees the wrong way and corrupts the heap.
-	g_pGameEventSystem->PostEventAbstract(0, false, const_cast<CChatRecipientFilter *>(&filter), netmsg, data, 0);
+	g_pGameEventSystem->PostEventAbstract(0, false, const_cast<CRecipientFilter *>(&filter), netmsg, data, 0);
 	g_pNetworkMessages->DeallocateNetMessageAbstract(netmsg, data);
 }
 
@@ -153,7 +112,8 @@ static void PrintCrossChat(const char *rawAlias, const char *rawName, const char
 	const char *name = nameText.c_str();
 	const char *message = messageText.c_str();
 
-	CChatRecipientFilter filter;
+	CRecipientFilter filter;
+	filter.MakeReliable();
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
@@ -179,7 +139,8 @@ static void PrintCrossChat(const char *rawAlias, const char *rawName, const char
 
 static void NotifyMuteState(int slot, bool muted)
 {
-	CChatRecipientFilter filter;
+	CRecipientFilter filter;
+	filter.MakeReliable();
 	filter.AddRecipient(slot);
 	if (muted)
 	{

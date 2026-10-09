@@ -235,7 +235,7 @@ static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, 
 
 bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	if (g_Config.apiUrl[0] == '\0' || !cmd.IsValidRef())
+	if (g_Config.apiUrl.empty() || !cmd.IsValidRef())
 	{
 		return false;
 	}
@@ -296,8 +296,8 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		return false;
 	}
 
-	bool silent = strchr(g_Config.silentCommandPrefix, text[0]) != nullptr;
-	bool isCommand = silent || strchr(g_Config.commandPrefix, text[0]) != nullptr;
+	bool silent = g_Config.silentCommandPrefix.find(text[0]) != std::string::npos;
+	bool isCommand = silent || g_Config.commandPrefix.find(text[0]) != std::string::npos;
 
 	// Mute toggle.
 	std::string command = text.substr(1, text.find_first_of(" \t", 1) - 1);
@@ -342,7 +342,7 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 					   + JsonEscape(p.name) + "\",\"message\":\"" + JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
 					   + "}";
 
-	std::string url = std::string(g_Config.apiUrl) + "/chat/messages";
+	std::string url = g_Config.apiUrl + "/chat/messages";
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);
 	return false;
 }
@@ -440,7 +440,7 @@ static void StartChatStream()
 	ResolveIpPort(ip, sizeof(ip), port);
 
 	char url[1024];
-	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_Config.apiUrl, g_chatCursor, ip, port);
+	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_Config.apiUrl.c_str(), g_chatCursor, ip, port);
 
 	void *gen = (void *)(uintptr_t)(++g_streamGen);
 	if (g_HttpClient.Request("GET", url, nullptr, CHAT_STREAM_TIMEOUT_SECONDS, OnChatStream, gen))
@@ -456,7 +456,7 @@ static void StartChatStream()
 
 void CrossChat_Tick(bool hasHumans)
 {
-	if (g_Config.apiUrl[0] == '\0')
+	if (g_Config.apiUrl.empty())
 	{
 		return;
 	}

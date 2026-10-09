@@ -80,7 +80,7 @@ namespace
 			MMU_LOG_WARN("API request: invalid callback\n");
 			return false;
 		}
-		if (g_Config.apiUrl[0] == '\0')
+		if (g_Config.apiUrl.empty())
 		{
 			MMU_LOG_WARN("API request: no api_url configured\n");
 			return false;
@@ -162,10 +162,10 @@ int FKZApi::GetApiBase(char *buffer, int maxlength)
 {
 	if (buffer && maxlength > 0)
 	{
-		strncpy(buffer, g_Config.apiUrl, maxlength - 1);
+		strncpy(buffer, g_Config.apiUrl.c_str(), maxlength - 1);
 		buffer[maxlength - 1] = '\0';
 	}
-	return (int)strlen(g_Config.apiUrl);
+	return (int)g_Config.apiUrl.size();
 }
 
 bool FKZApi::GetHealth(PluginId owner, FKZ_ResponseCallback callback, void *data)

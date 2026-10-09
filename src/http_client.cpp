@@ -200,11 +200,9 @@ bool HttpClient::Request(const char *method, const char *url, const char *body, 
 
 	http->SetHTTPRequestHeaderValue(req, "Accept", "application/json");
 
-	if (g_Config.apiKey[0] != '\0')
+	if (!g_Config.apiKey.empty())
 	{
-		char authHeader[300];
-		snprintf(authHeader, sizeof(authHeader), "Bearer %s", g_Config.apiKey);
-		http->SetHTTPRequestHeaderValue(req, "Authorization", authHeader);
+		http->SetHTTPRequestHeaderValue(req, "Authorization", ("Bearer " + g_Config.apiKey).c_str());
 	}
 
 	http->SetHTTPRequestNetworkActivityTimeout(req, timeoutSec);

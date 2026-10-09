@@ -1,31 +1,28 @@
 #ifndef _INCLUDE_CONFIG_H_
 #define _INCLUDE_CONFIG_H_
 
+#include "utils/config_blocks.h"
+
+#include <string>
+
 struct PluginConfig
 {
-	char apiUrl[256];
-	char apiKey[256];
-	char serverIp[64];
-	int serverPort;
-	float interval;
+	std::string apiUrl;
+	std::string apiKey;
+	std::string serverIp;
+	int serverPort = 0;
+	float interval = 10.0f;
 
-	// Local per-player database (via the sql_mm plugin). Empty driver disables it.
-	char dbDriver[16];    // "sqlite" or "mysql"
-	char dbDatabase[128]; // sqlite: file path relative to game dir. mysql: schema name
-	char dbHost[128];
-	char dbUser[64];
-	char dbPass[128];
-	int dbPort;
-	char dbPrefix[32]; // in front of every table name
+	// Local per-player database (via the sql_mm plugin).
+	bool dbEnabled = false;
+	mmu::config::DatabaseBlock db = mmu::config::DatabaseBlock::Defaults("", "addons/fkz-api/data/prefs.sqlite3", "");
 
 	// Each character is an accepted prefix.
-	char commandPrefix[8];       // normal (message stays visible)
-	char silentCommandPrefix[8]; // silent (message suppressed)
+	std::string commandPrefix = "!";       // normal (message stays visible)
+	std::string silentCommandPrefix = "/"; // silent (message suppressed)
 
-	bool logToFile; // addons/fkz-api/logs
-	int logRetentionDays;
+	mmu::config::LogBlock log;
 
-	PluginConfig();
 	void Load();
 };
 

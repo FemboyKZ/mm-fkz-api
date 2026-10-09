@@ -42,7 +42,7 @@ static void OnReportResponse(bool /*success*/, int statusCode, const char *body,
 		g_failCount++;
 		MMU_LOG_WARN("POST %s/servers/status transport error (no HTTP response: "
 					 "timeout/DNS/TLS/conn) (fail #%d)\n",
-					 g_Config.apiUrl, g_failCount);
+					 g_Config.apiUrl.c_str(), g_failCount);
 	}
 	else
 	{
@@ -82,7 +82,7 @@ void SendReport()
 
 void SendHibernate()
 {
-	if (g_Config.apiUrl[0] == '\0')
+	if (g_Config.apiUrl.empty())
 	{
 		return;
 	}

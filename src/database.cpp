@@ -14,7 +14,6 @@
 #include "utils/sql.h"
 
 #include <tier0/platform.h>
-#include <tier1/strtools.h>
 
 static mmu::sql::Connection g_db;
 static bool g_dbReady = false;
@@ -80,41 +79,13 @@ static void CreateSchema()
 
 void Database_Init()
 {
-	if (g_Config.dbDriver[0] == '\0')
+	if (!g_Config.dbEnabled || !g_db.Init(g_Config.db.DbType()))
 	{
 		return;
 	}
-
-	mmu::sql::DbType type;
-	mmu::sql::ConnectParams params;
-	if (V_stricmp(g_Config.dbDriver, "sqlite") == 0)
-	{
-		type = mmu::sql::DbType::SQLite;
-		// sql_mm resolves this relative to the game dir and creates missing dirs.
-		params.path = g_Config.dbDatabase;
-	}
-	else if (V_stricmp(g_Config.dbDriver, "mysql") == 0)
-	{
-		type = mmu::sql::DbType::MySQL;
-		params.host = g_Config.dbHost;
-		params.user = g_Config.dbUser;
-		params.pass = g_Config.dbPass;
-		params.database = g_Config.dbDatabase;
-		params.port = g_Config.dbPort;
-	}
-	else
-	{
-		MMU_LOG_WARN("Unknown db_driver '%s', local database disabled.\n", g_Config.dbDriver);
-		return;
-	}
-
-	if (!g_db.Init(type))
-	{
-		return;
-	}
-	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.dbPrefix);
+	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.db.prefix.c_str());
 	g_db.SetSchemaHook(CreateSchema);
-	g_db.Connect(params, nullptr);
+	g_db.Connect(g_Config.db.ToConnectParams(), nullptr);
 }
 
 void Database_RunFrame()

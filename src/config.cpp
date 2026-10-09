@@ -1,248 +1,91 @@
-#include <stdio.h>
-#include <cctype>
-#include <cstring>
 #include <cstdlib>
 
 #include "config.h"
 #include "version_gen.h"
 #include "plugin.h"
 
+#include "utils/kv_parser.h"
 #include "utils/log.h"
+#include "utils/str.h"
 
 PluginConfig g_Config;
 
-PluginConfig::PluginConfig()
+static void ConfigHandler(const std::string &section, const std::string &key, const std::string &value, void *userdata)
 {
-	apiUrl[0] = '\0';
-	apiKey[0] = '\0';
-	serverIp[0] = '\0';
-	serverPort = 0;
-	interval = 10.0f;
-	dbDriver[0] = '\0';
-	strcpy(dbDatabase, "addons/fkz-api/data/prefs.sqlite3");
-	strcpy(dbHost, "localhost");
-	dbUser[0] = '\0';
-	dbPass[0] = '\0';
-	dbPort = 3306;
-	dbPrefix[0] = '\0';
-	strcpy(commandPrefix, "!");
-	strcpy(silentCommandPrefix, "/");
-	logToFile = true;
-	logRetentionDays = 30;
-}
+	PluginConfig *cfg = static_cast<PluginConfig *>(userdata);
+	std::string sec = str::ToLower(section);
+	std::string k = str::ToLower(key);
 
-// Config file parser: key "value" format
-static bool ParseConfigLine(const char *line, char *key, int keyLen, char *value, int valueLen)
-{
-	int pos = 0;
-
-	// Skip leading whitespace
-	while (line[pos] == ' ' || line[pos] == '\t')
+	if (sec == "config")
 	{
-		pos++;
-	}
-
-	// Read key (optionally quoted)
-	if (line[pos] == '"')
-	{
-		pos++;
-		int start = pos;
-		while (line[pos] != '"' && line[pos] != '\0')
+		if (k == "apiurl")
 		{
-			pos++;
+			cfg->apiUrl = value;
 		}
-		int len = pos - start;
-		if (len >= keyLen)
+		else if (k == "apikey")
 		{
-			len = keyLen - 1;
+			cfg->apiKey = value;
 		}
-		strncpy(key, line + start, len);
-		key[len] = '\0';
-		if (line[pos] == '"')
+		else if (k == "serverip")
 		{
-			pos++;
+			cfg->serverIp = value;
+		}
+		else if (k == "serverport")
+		{
+			cfg->serverPort = atoi(value.c_str());
+		}
+		else if (k == "interval")
+		{
+			cfg->interval = static_cast<float>(atof(value.c_str()));
+		}
+		else if (k == "commandprefix")
+		{
+			cfg->commandPrefix = value;
+		}
+		else if (k == "silentcommandprefix")
+		{
+			cfg->silentCommandPrefix = value;
+		}
+		else
+		{
+			mmu::config::ApplyLogKey(cfg->log, k, value);
 		}
 	}
-	else
+	else if (sec == "database")
 	{
-		int start = pos;
-		while (line[pos] != ' ' && line[pos] != '\t' && line[pos] != '\0')
+		if (k == "enabled")
 		{
-			pos++;
+			cfg->dbEnabled = (value != "0");
 		}
-		int len = pos - start;
-		if (len >= keyLen)
+		else
 		{
-			len = keyLen - 1;
+			mmu::config::ApplyDatabaseKey(cfg->db, k, value);
 		}
-		strncpy(key, line + start, len);
-		key[len] = '\0';
 	}
-
-	// Skip whitespace between key and value
-	while (line[pos] == ' ' || line[pos] == '\t')
-	{
-		pos++;
-	}
-
-	// Read value (must be quoted)
-	if (line[pos] == '"')
-	{
-		pos++;
-		int start = pos;
-		while (line[pos] != '"' && line[pos] != '\0')
-		{
-			pos++;
-		}
-		int len = pos - start;
-		if (len >= valueLen)
-		{
-			len = valueLen - 1;
-		}
-		strncpy(value, line + start, len);
-		value[len] = '\0';
-		return true;
-	}
-
-	return false;
 }
 
 void PluginConfig::Load()
 {
 	*this = PluginConfig();
 
-	// Build absolute path using Metamod's game base directory
-	const char *baseDir = g_SMAPI->GetBaseDir();
-	char cfgPath[512];
-	snprintf(cfgPath, sizeof(cfgPath), "%s/cfg/%s/core.cfg", baseDir, PLUGIN_NAME);
-
-	FILE *file = fopen(cfgPath, "r");
-	if (!file)
+	const std::string base = g_SMAPI->GetBaseDir();
+	const std::string path = base + "/cfg/" PLUGIN_NAME "/core.cfg";
+	// Fallback: alongside the plugin's addons folder.
+	if (!kv::LoadFile(path, ConfigHandler, this) && !kv::LoadFile(base + "/addons/" PLUGIN_NAME "/core.cfg", ConfigHandler, this))
 	{
-		// Fallback: alongside the plugin's addons folder.
-		snprintf(cfgPath, sizeof(cfgPath), "%s/addons/%s/core.cfg", baseDir, PLUGIN_NAME);
-		file = fopen(cfgPath, "r");
-	}
-	if (!file)
-	{
-		MMU_LOG_WARN("Config not found at %s/cfg/%s/core.cfg\n", baseDir, PLUGIN_NAME);
-		return;
+		MMU_LOG_WARN("No config read from %s. It has to be \"" PLUGIN_NAME "\" { ... } with its sections, "
+					 "the key \"value\" lines of older versions are not read.\n",
+					 path.c_str());
 	}
 
-	char line[512];
-	while (fgets(line, sizeof(line), file))
+	mmu::config::ApplyLogBlock(log);
+
+	if (interval < 1.0f)
 	{
-		// Trim newline
-		size_t len = strlen(line);
-		while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
-		{
-			line[--len] = '\0';
-		}
-
-		// Skip empty lines and comments
-		const char *trimmed = line;
-		while (*trimmed == ' ' || *trimmed == '\t')
-		{
-			trimmed++;
-		}
-		if (*trimmed == '\0' || *trimmed == '/' || *trimmed == '#')
-		{
-			continue;
-		}
-
-		char key[64], value[256];
-		if (ParseConfigLine(trimmed, key, sizeof(key), value, sizeof(value)))
-		{
-			if (strcmp(key, "api_url") == 0)
-			{
-				strncpy(apiUrl, value, sizeof(apiUrl) - 1);
-			}
-			else if (strcmp(key, "api_key") == 0)
-			{
-				strncpy(apiKey, value, sizeof(apiKey) - 1);
-			}
-			else if (strcmp(key, "server_ip") == 0)
-			{
-				strncpy(serverIp, value, sizeof(serverIp) - 1);
-			}
-			else if (strcmp(key, "server_port") == 0)
-			{
-				serverPort = atoi(value);
-			}
-			else if (strcmp(key, "interval") == 0)
-			{
-				interval = static_cast<float>(atof(value));
-				if (interval < 1.0f)
-				{
-					interval = 1.0f;
-				}
-			}
-			else if (strcmp(key, "db_driver") == 0)
-			{
-				strncpy(dbDriver, value, sizeof(dbDriver) - 1);
-			}
-			else if (strcmp(key, "db_database") == 0)
-			{
-				strncpy(dbDatabase, value, sizeof(dbDatabase) - 1);
-			}
-			else if (strcmp(key, "db_host") == 0)
-			{
-				strncpy(dbHost, value, sizeof(dbHost) - 1);
-			}
-			else if (strcmp(key, "db_user") == 0)
-			{
-				strncpy(dbUser, value, sizeof(dbUser) - 1);
-			}
-			else if (strcmp(key, "db_pass") == 0)
-			{
-				strncpy(dbPass, value, sizeof(dbPass) - 1);
-			}
-			else if (strcmp(key, "db_port") == 0)
-			{
-				dbPort = atoi(value);
-			}
-			else if (strcmp(key, "db_prefix") == 0)
-			{
-				strncpy(dbPrefix, value, sizeof(dbPrefix) - 1);
-			}
-			else if (strcmp(key, "command_prefix") == 0)
-			{
-				snprintf(commandPrefix, sizeof(commandPrefix), "%s", value);
-			}
-			else if (strcmp(key, "silent_command_prefix") == 0)
-			{
-				snprintf(silentCommandPrefix, sizeof(silentCommandPrefix), "%s", value);
-			}
-			else if (strcmp(key, "log_to_file") == 0)
-			{
-				logToFile = atoi(value) != 0;
-			}
-			else if (strcmp(key, "log_retention_days") == 0)
-			{
-				logRetentionDays = atoi(value);
-			}
-		}
+		interval = 1.0f;
 	}
-
-	fclose(file);
-
-	// Goes into the table names as typed.
-	char *kept = dbPrefix;
-	for (const char *c = dbPrefix; *c; c++)
+	if (!apiUrl.empty() && apiUrl.back() == '/')
 	{
-		if (isalnum(static_cast<unsigned char>(*c)) || *c == '_')
-		{
-			*kept++ = *c;
-		}
-	}
-	*kept = '\0';
-
-	mmu::log::SetToFile(logToFile);
-	mmu::log::SetRetentionDays(logRetentionDays);
-
-	size_t urlLen = strlen(apiUrl);
-	if (urlLen > 0 && apiUrl[urlLen - 1] == '/')
-	{
-		apiUrl[urlLen - 1] = '\0';
+		apiUrl.pop_back();
 	}
 }

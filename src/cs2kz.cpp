@@ -5,8 +5,10 @@
  * and collects per-mode playtime for the status report.
  */
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #include "cs2kz.h"
 #include "globals.h"
@@ -42,9 +44,17 @@ struct ModePlaytime
 	int currentMode;            // mode the player was in at that sample, -1 = unknown
 };
 
+// Deltas written into one report whose result is still unknown.
+struct SentPlaytime
+{
+	int reportId;
+	double seconds[MAXPLAYERS + 1][MODE_COUNT];
+};
+
 static ModePlaytime s_playtime[MAXPLAYERS + 1];
-// Deltas already written into a report whose result is still unknown.
-static double s_sentSeconds[MAXPLAYERS + 1][MODE_COUNT];
+// Reports overlap, a leaving player sends one at once, so each keeps its own.
+static std::vector<SentPlaytime> s_sent;
+static int s_nextReportId = 1;
 static double s_lastTick = 0.0;
 
 void CS2KZ_Refresh()
@@ -74,7 +84,10 @@ void CS2KZ_ResetPlayer(int slot)
 	memset(&s_playtime[slot], 0, sizeof(s_playtime[slot]));
 	s_playtime[slot].currentMode = -1;
 	// Whatever a report still owes for this slot belonged to the previous occupant.
-	memset(s_sentSeconds[slot], 0, sizeof(s_sentSeconds[slot]));
+	for (SentPlaytime &sent : s_sent)
+	{
+		memset(sent.seconds[slot], 0, sizeof(sent.seconds[slot]));
+	}
 }
 
 // The mode the player is in right now, or -1 when cs2kz has no mode for this slot.
@@ -145,31 +158,40 @@ void CS2KZ_Tick()
 	CS2KZ_SampleAll();
 }
 
-void CS2KZ_TakePlaytimeDeltas()
+int CS2KZ_TakePlaytimeDeltas()
 {
+	s_sent.emplace_back();
+	SentPlaytime &sent = s_sent.back();
+	sent.reportId = s_nextReportId++;
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		for (int m = 0; m < MODE_COUNT; m++)
 		{
-			s_sentSeconds[i][m] += s_playtime[i].seconds[m];
+			sent.seconds[i][m] = s_playtime[i].seconds[m];
 			s_playtime[i].seconds[m] = 0.0;
 		}
 	}
+	return sent.reportId;
 }
 
-void CS2KZ_OnReportResult(bool accepted)
+void CS2KZ_OnReportResult(int reportId, bool accepted)
 {
-	for (int i = 0; i < MAXPLAYERS; i++)
+	auto sent = std::find_if(s_sent.begin(), s_sent.end(), [reportId](const SentPlaytime &s) { return s.reportId == reportId; });
+	if (sent == s_sent.end())
 	{
-		for (int m = 0; m < MODE_COUNT; m++)
+		return;
+	}
+	if (!accepted)
+	{
+		for (int i = 0; i < MAXPLAYERS; i++)
 		{
-			if (!accepted)
+			for (int m = 0; m < MODE_COUNT; m++)
 			{
-				s_playtime[i].seconds[m] += s_sentSeconds[i][m];
+				s_playtime[i].seconds[m] += sent->seconds[i][m];
 			}
-			s_sentSeconds[i][m] = 0.0;
 		}
 	}
+	s_sent.erase(sent);
 }
 
 bool CS2KZ_HasPendingPlaytime(int slot)

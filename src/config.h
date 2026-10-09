@@ -16,6 +16,7 @@ struct PluginConfig
 	char dbUser[64];
 	char dbPass[128];
 	int dbPort;
+	char dbPrefix[32]; // in front of every table name
 
 	// Each character is an accepted prefix.
 	char commandPrefix[8];       // normal (message stays visible)

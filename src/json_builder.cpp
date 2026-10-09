@@ -166,8 +166,7 @@ std::string BuildPayloadJson()
 	int port;
 	ResolveIpPort(ip, sizeof(ip), port);
 
-	// Refresh map name each report
-	g_ServerInfo.UpdateMap();
+	g_ServerInfo.Refresh();
 
 	// Player counts
 	int playerCount = g_PlayerManager.GetHumanPlayerCount();

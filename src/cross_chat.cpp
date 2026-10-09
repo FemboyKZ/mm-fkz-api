@@ -5,6 +5,7 @@
  * Receive path keeps one long-poll open against the API and prints incoming lines.
  */
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -39,6 +40,8 @@
 #define HUD_PRINTTALK 3 // TextMsg destination: the chat area
 
 #define CHAT_RETRY_SECONDS           3.0
+#define CHAT_RETRY_MAX_SECONDS       60.0
+#define CHAT_RELAY_SECONDS           0.75 // per player, between relayed lines
 #define CHAT_STREAM_TIMEOUT_SECONDS  60   // > the API's ~25s park window
 #define CHAT_STREAM_DEADLINE_SECONDS 70.0 // > the request's own timeout, so only a lost completion trips this
 #define CHAT_MAX_PARSE_FAILURES      3    // unreadable replies tolerated before resyncing
@@ -48,7 +51,9 @@ static bool g_streamActive;      // a long-poll request is in flight
 static double g_streamStartTime; // time the in-flight poll was opened
 static uint32 g_streamGen;       // bumped per poll; orphans a completion the watchdog gave up on
 static double g_nextRetryTime;   // earliest time to (re)open the stream
-static int g_parseFailures;      // consecutive replies we could not read
+static double g_retryDelay = CHAT_RETRY_SECONDS;
+static double g_nextRelayTime[MAXPLAYERS + 1];
+static int g_parseFailures; // consecutive replies we could not read
 static bool g_muted[MAXPLAYERS + 1];
 
 // Prints a chat line to everyone in the filter. Uses TextMsg/HUD_PRINTTALK
@@ -174,17 +179,17 @@ static void SavePref(int slot)
 	if (Database_GetType() == DatabaseType::MySQL)
 	{
 		snprintf(query, sizeof(query),
-				 "INSERT INTO player_prefs (steamid, crosschat_muted) VALUES "
+				 "INSERT INTO %s (steamid, crosschat_muted) VALUES "
 				 "(%llu, %d) ON DUPLICATE KEY UPDATE crosschat_muted = %d;",
-				 (unsigned long long)p.steamId64, muted, muted);
+				 Database_PrefsTable(), (unsigned long long)p.steamId64, muted, muted);
 	}
 	else
 	{
 		snprintf(query, sizeof(query),
-				 "INSERT INTO player_prefs (steamid, crosschat_muted) VALUES "
+				 "INSERT INTO %s (steamid, crosschat_muted) VALUES "
 				 "(%llu, %d) ON CONFLICT(steamid) DO UPDATE SET crosschat_muted = "
 				 "%d;",
-				 (unsigned long long)p.steamId64, muted, muted);
+				 Database_PrefsTable(), (unsigned long long)p.steamId64, muted, muted);
 	}
 
 	Database_GetConnection()->Query(query, [](ISQLQuery * /*q*/) {});
@@ -198,7 +203,7 @@ void CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 	}
 
 	char query[256];
-	snprintf(query, sizeof(query), "SELECT crosschat_muted FROM player_prefs WHERE steamid = %llu;", (unsigned long long)steamId64);
+	snprintf(query, sizeof(query), "SELECT crosschat_muted FROM %s WHERE steamid = %llu;", Database_PrefsTable(), (unsigned long long)steamId64);
 
 	Database_GetConnection()->Query(query,
 									[slot, steamId64](ISQLQuery *q)
@@ -251,6 +256,12 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		return false;
 	}
 
+	// Until Steam confirms it the SteamID is only the client's claim, and it signs the relayed line and keys the saved toggle.
+	if (!g_pEngineServer->IsClientFullyAuthenticated(CPlayerSlot(slot)))
+	{
+		return false;
+	}
+
 	// args.ArgS() is the remainder after "say", usually wrapped in quotes.
 	const char *raw = args.ArgS();
 	if (!raw)
@@ -286,7 +297,8 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	bool isCommand = silent || strchr(g_Config.commandPrefix, text[0]) != nullptr;
 
 	// Mute toggle.
-	if (isCommand && V_stricmp(text.c_str() + 1, "crosschat") == 0)
+	std::string command = text.substr(1, text.find_first_of(" \t", 1) - 1);
+	if (isCommand && V_stricmp(command.c_str(), "crosschat") == 0)
 	{
 		g_muted[slot] = !g_muted[slot];
 		NotifyMuteState(slot, g_muted[slot]);
@@ -307,6 +319,14 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 	{
 		return false;
 	}
+
+	// Every say reaches this hook, a held-down bind included.
+	double now = Plat_FloatTime();
+	if (now < g_nextRelayTime[slot])
+	{
+		return false;
+	}
+	g_nextRelayTime[slot] = now + CHAT_RELAY_SECONDS;
 
 	char ip[64];
 	int port;
@@ -344,6 +364,13 @@ static bool JsonBool(const nlohmann::json &obj, const char *key, bool fallback)
 	return (it != obj.end() && it->is_boolean()) ? it->get<bool>() : fallback;
 }
 
+// Doubles with every failure in a row, a dead API is otherwise asked every few seconds for as long as players are on.
+static void RetryStreamLater()
+{
+	g_nextRetryTime = Plat_FloatTime() + g_retryDelay;
+	g_retryDelay = (std::min)(g_retryDelay * 2.0, CHAT_RETRY_MAX_SECONDS);
+}
+
 static void OnChatStream(bool /*success*/, int statusCode, const char *body, uint32 /*len*/, void *data)
 {
 	// A poll the watchdog already replaced; its successor owns the stream state now.
@@ -356,9 +383,10 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 
 	if (statusCode != 200)
 	{
-		g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
+		RetryStreamLater();
 		return;
 	}
+	g_retryDelay = CHAT_RETRY_SECONDS;
 
 	if (body && body[0] != '\0')
 	{
@@ -419,7 +447,7 @@ static void StartChatStream()
 	}
 	else
 	{
-		g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
+		RetryStreamLater();
 	}
 }
 

@@ -13,6 +13,8 @@ struct ServerInfo
 
 	ServerInfo();
 	void Cache();
+	// What changes after startup: server.cfg sets the hostname, Steam answers later.
+	void Refresh();
 	void UpdateMap();
 };
 

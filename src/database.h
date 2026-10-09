@@ -21,7 +21,7 @@ void Database_Init();
 // Destroys the connection. Safe to call when nothing was opened.
 void Database_Cleanup();
 
-// Carries out a teardown a callback asked for. Call once per game frame.
+// Carries out a teardown a callback asked for, and tries a failed connect again. Call once per game frame.
 void Database_RunFrame();
 
 // True once connected and the schema migration has completed.
@@ -29,5 +29,8 @@ bool Database_IsReady();
 
 ISQLConnection *Database_GetConnection();
 DatabaseType Database_GetType();
+
+// The prefs table with db_prefix in front.
+const char *Database_PrefsTable();
 
 #endif // _INCLUDE_DATABASE_H_

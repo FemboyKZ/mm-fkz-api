@@ -4,6 +4,7 @@
  * Periodically reports live player/server state to /servers/status and signals hibernation when the server empties.
  */
 
+#include <cstdint>
 #include <cstdio>
 #include <string>
 
@@ -17,9 +18,9 @@
 static int g_failCount = 0;
 static int g_successCount = 0;
 
-static void OnReportResponse(bool /*success*/, int statusCode, const char *body, void * /*data*/)
+static void OnReportResponse(bool /*success*/, int statusCode, const char *body, void *data)
 {
-	CS2KZ_OnReportResult(statusCode == 200);
+	CS2KZ_OnReportResult((int)(intptr_t)data, statusCode == 200);
 
 	if (statusCode == 200)
 	{
@@ -69,11 +70,11 @@ void SendReport()
 	std::string payload = BuildPayloadJson();
 
 	// The per-mode deltas are in the payload now, held aside until the POST is answered so a failure can give them back.
-	CS2KZ_TakePlaytimeDeltas();
+	int reportId = CS2KZ_TakePlaytimeDeltas();
 
-	if (!g_FKZApi.PostServerStatus(payload.c_str(), OnReportResponse, NULL))
+	if (!g_FKZApi.PostServerStatus(g_PLID, payload.c_str(), OnReportResponse, (void *)(intptr_t)reportId))
 	{
-		CS2KZ_OnReportResult(false);
+		CS2KZ_OnReportResult(reportId, false);
 	}
 }
 
@@ -85,7 +86,7 @@ void SendHibernate()
 	}
 
 	std::string payload = BuildHibernateJson();
-	if (g_FKZApi.PostHibernate(payload.c_str(), OnHibernateResponse, NULL))
+	if (g_FKZApi.PostHibernate(g_PLID, payload.c_str(), OnHibernateResponse, NULL))
 	{
 		META_CONPRINTF("[FKZ] Sent hibernate signal (server empty)\n");
 	}

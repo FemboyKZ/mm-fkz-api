@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <cctype>
 #include <cstring>
 #include <cstdlib>
 
@@ -21,6 +22,7 @@ PluginConfig::PluginConfig()
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;
+	dbPrefix[0] = '\0';
 	strcpy(commandPrefix, "!");
 	strcpy(silentCommandPrefix, "/");
 }
@@ -114,6 +116,7 @@ void PluginConfig::Load()
 	dbUser[0] = '\0';
 	dbPass[0] = '\0';
 	dbPort = 3306;
+	dbPrefix[0] = '\0';
 	strcpy(commandPrefix, "!");
 	strcpy(silentCommandPrefix, "/");
 
@@ -207,6 +210,10 @@ void PluginConfig::Load()
 			{
 				dbPort = atoi(value);
 			}
+			else if (strcmp(key, "db_prefix") == 0)
+			{
+				strncpy(dbPrefix, value, sizeof(dbPrefix) - 1);
+			}
 			else if (strcmp(key, "command_prefix") == 0)
 			{
 				snprintf(commandPrefix, sizeof(commandPrefix), "%s", value);
@@ -219,6 +226,17 @@ void PluginConfig::Load()
 	}
 
 	fclose(file);
+
+	// Goes into the table names as typed.
+	char *kept = dbPrefix;
+	for (const char *c = dbPrefix; *c; c++)
+	{
+		if (isalnum(static_cast<unsigned char>(*c)) || *c == '_')
+		{
+			*kept++ = *c;
+		}
+	}
+	*kept = '\0';
 
 	size_t urlLen = strlen(apiUrl);
 	if (urlLen > 0 && apiUrl[urlLen - 1] == '/')

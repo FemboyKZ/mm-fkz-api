@@ -26,25 +26,10 @@ ServerInfo::ServerInfo()
 
 void ServerInfo::Cache()
 {
-	// Hostname
-	ConVarRefAbstract cvHostname("hostname");
-	if (cvHostname.IsValidRef())
-	{
-		strncpy(hostname, cvHostname.GetString().Get(), sizeof(hostname) - 1);
-		hostname[sizeof(hostname) - 1] = '\0';
-	}
-	else
-	{
-		strncpy(hostname, "unknown", sizeof(hostname));
-	}
-
 	// Metamod version
 	int major, minor, plvers, plmin;
 	g_SMAPI->GetApiVersions(major, minor, plvers, plmin);
 	snprintf(mmVersion, sizeof(mmVersion), "%d.%d", major, minor);
-
-	// VAC status
-	secure = SteamGameServer_BSecure();
 
 	// Version from steam.inf
 	version[0] = '\0';
@@ -73,11 +58,31 @@ void ServerInfo::Cache()
 		fclose(f);
 	}
 
-	// Map name
-	UpdateMap();
+	Refresh();
 
 	META_CONPRINTF("[FKZ] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n", hostname, mapName, version, tickrate,
 				   secure ? "yes" : "no");
+}
+
+void ServerInfo::Refresh()
+{
+	// Hostname
+	ConVarRefAbstract cvHostname("hostname");
+	if (cvHostname.IsValidRef())
+	{
+		strncpy(hostname, cvHostname.GetString().Get(), sizeof(hostname) - 1);
+		hostname[sizeof(hostname) - 1] = '\0';
+	}
+	else
+	{
+		strncpy(hostname, "unknown", sizeof(hostname));
+	}
+
+	// VAC status
+	secure = SteamGameServer_BSecure();
+
+	// Map name
+	UpdateMap();
 }
 
 void ServerInfo::UpdateMap()

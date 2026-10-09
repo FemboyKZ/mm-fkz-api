@@ -152,9 +152,10 @@ void MMSPlugin::OnPluginLoad(PluginId /*id*/)
 	CS2KZ_Refresh();
 }
 
-void MMSPlugin::OnPluginUnload(PluginId /*id*/)
+void MMSPlugin::OnPluginUnload(PluginId id)
 {
 	CS2KZ_Refresh();
+	g_FKZApi.DropOwnedBy(id);
 }
 
 void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret)

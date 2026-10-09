@@ -22,11 +22,12 @@ inline bool CS2KZ_IsLoaded()
 // cs2kz has no mode-change event, so the current mode is polled
 // and the elapsed time is accrued into whichever mode the player was in at the previous sample.
 void CS2KZ_ResetPlayer(int slot);
-void CS2KZ_Tick();               // throttled poll, call every frame
-void CS2KZ_SampleAll();          // unthrottled flush, call before building a report
-void CS2KZ_TakePlaytimeDeltas(); // call once the report captured the deltas, holds them until the result is known
+void CS2KZ_Tick();      // throttled poll, call every frame
+void CS2KZ_SampleAll(); // unthrottled flush, call before building a report
+// Call once the report captured the deltas. Holds them until that report's result is known, and returns the id to settle it with.
+int CS2KZ_TakePlaytimeDeltas();
 // A report that never reached the API gives its deltas back, so the next one carries them instead of dropping them.
-void CS2KZ_OnReportResult(bool accepted);
+void CS2KZ_OnReportResult(int reportId, bool accepted);
 
 // Whether this slot has playtime no report has taken yet.
 bool CS2KZ_HasPendingPlaytime(int slot);

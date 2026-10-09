@@ -12,6 +12,7 @@
 #include "player_manager.h"
 #include "plugin.h"
 
+#include <tier0/platform.h>
 #include <tier1/strtools.h>
 
 #include "interfaces/sql_mm/sql_mm.h"
@@ -22,14 +23,15 @@ static ISQLConnection *g_dbConnection = nullptr;
 static DatabaseType g_dbType = DatabaseType::None;
 static bool g_dbReady = false;
 static bool g_dbDestroyPending = false;
+// When a failed connect is tried again, 0 while none is owed.
+static double g_dbRetryTime = 0.0;
+static char g_prefsTable[64];
+
+#define DB_RETRY_SECONDS 30.0
 
 // One row per player, keyed by steamID64.
-static const char *kCreatePrefsSqlite = "CREATE TABLE IF NOT EXISTS player_prefs ("
-										"steamid INTEGER PRIMARY KEY, "
-										"crosschat_muted INTEGER NOT NULL DEFAULT 0);";
-static const char *kCreatePrefsMySQL = "CREATE TABLE IF NOT EXISTS player_prefs ("
-									   "steamid BIGINT UNSIGNED PRIMARY KEY, "
-									   "crosschat_muted TINYINT NOT NULL DEFAULT 0);";
+#define CREATE_PREFS_SQLITE "CREATE TABLE IF NOT EXISTS %s (steamid INTEGER PRIMARY KEY, crosschat_muted INTEGER NOT NULL DEFAULT 0);"
+#define CREATE_PREFS_MYSQL  "CREATE TABLE IF NOT EXISTS %s (steamid BIGINT UNSIGNED PRIMARY KEY, crosschat_muted TINYINT NOT NULL DEFAULT 0);"
 
 bool Database_IsReady()
 {
@@ -44,6 +46,11 @@ ISQLConnection *Database_GetConnection()
 DatabaseType Database_GetType()
 {
 	return g_dbType;
+}
+
+const char *Database_PrefsTable()
+{
+	return g_prefsTable;
 }
 
 static void OnMigrationDone(std::vector<ISQLQuery *> /*queries*/)
@@ -71,14 +78,17 @@ static void OnConnected(bool success)
 {
 	if (!success)
 	{
-		META_CONPRINTF("[FKZ] Database connection failed.\n");
+		META_CONPRINTF("[FKZ] Database connection failed, trying again in %.0fs.\n", DB_RETRY_SECONDS);
 		// Destroy() erases the connection from the vector sql_mm is iterating to reach this callback, so it waits for the next frame.
 		g_dbDestroyPending = true;
 		return;
 	}
 
+	char create[256];
+	snprintf(create, sizeof(create), g_dbType == DatabaseType::MySQL ? CREATE_PREFS_MYSQL : CREATE_PREFS_SQLITE, g_prefsTable);
+
 	Transaction txn;
-	txn.queries.push_back(g_dbType == DatabaseType::MySQL ? kCreatePrefsMySQL : kCreatePrefsSqlite);
+	txn.queries.push_back(create);
 	g_dbConnection->ExecuteTransaction(txn, OnMigrationDone, OnMigrationFail);
 }
 
@@ -88,6 +98,7 @@ void Database_Init()
 	{
 		return;
 	}
+	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.dbPrefix);
 
 	ISQLInterface *sqlInterface = (ISQLInterface *)g_SMAPI->MetaFactory(SQLMM_INTERFACE, nullptr, nullptr);
 	if (!sqlInterface)
@@ -128,12 +139,17 @@ void Database_Init()
 
 void Database_RunFrame()
 {
-	if (!g_dbDestroyPending)
+	if (g_dbDestroyPending)
 	{
-		return;
+		g_dbDestroyPending = false;
+		Database_Cleanup();
+		g_dbRetryTime = Plat_FloatTime() + DB_RETRY_SECONDS;
 	}
-	g_dbDestroyPending = false;
-	Database_Cleanup();
+	else if (g_dbRetryTime > 0.0 && Plat_FloatTime() >= g_dbRetryTime)
+	{
+		g_dbRetryTime = 0.0;
+		Database_Init();
+	}
 }
 
 void Database_Cleanup()

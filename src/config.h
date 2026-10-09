@@ -22,6 +22,9 @@ struct PluginConfig
 	char commandPrefix[8];       // normal (message stays visible)
 	char silentCommandPrefix[8]; // silent (message suppressed)
 
+	bool logToFile; // addons/fkz-api/logs
+	int logRetentionDays;
+
 	PluginConfig();
 	void Load();
 };

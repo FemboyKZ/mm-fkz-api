@@ -7,6 +7,8 @@
 #include "version_gen.h"
 #include "plugin.h"
 
+#include "utils/log.h"
+
 PluginConfig g_Config;
 
 PluginConfig::PluginConfig()
@@ -25,6 +27,8 @@ PluginConfig::PluginConfig()
 	dbPrefix[0] = '\0';
 	strcpy(commandPrefix, "!");
 	strcpy(silentCommandPrefix, "/");
+	logToFile = true;
+	logRetentionDays = 30;
 }
 
 // Config file parser: key "value" format
@@ -105,20 +109,7 @@ static bool ParseConfigLine(const char *line, char *key, int keyLen, char *value
 
 void PluginConfig::Load()
 {
-	apiUrl[0] = '\0';
-	apiKey[0] = '\0';
-	serverIp[0] = '\0';
-	serverPort = 0;
-	interval = 10.0f;
-	dbDriver[0] = '\0';
-	strcpy(dbDatabase, "addons/fkz-api/data/prefs.sqlite3");
-	strcpy(dbHost, "localhost");
-	dbUser[0] = '\0';
-	dbPass[0] = '\0';
-	dbPort = 3306;
-	dbPrefix[0] = '\0';
-	strcpy(commandPrefix, "!");
-	strcpy(silentCommandPrefix, "/");
+	*this = PluginConfig();
 
 	// Build absolute path using Metamod's game base directory
 	const char *baseDir = g_SMAPI->GetBaseDir();
@@ -134,7 +125,7 @@ void PluginConfig::Load()
 	}
 	if (!file)
 	{
-		META_CONPRINTF("[FKZ] Config not found at %s/cfg/%s/core.cfg\n", baseDir, PLUGIN_NAME);
+		MMU_LOG_WARN("Config not found at %s/cfg/%s/core.cfg\n", baseDir, PLUGIN_NAME);
 		return;
 	}
 
@@ -222,6 +213,14 @@ void PluginConfig::Load()
 			{
 				snprintf(silentCommandPrefix, sizeof(silentCommandPrefix), "%s", value);
 			}
+			else if (strcmp(key, "log_to_file") == 0)
+			{
+				logToFile = atoi(value) != 0;
+			}
+			else if (strcmp(key, "log_retention_days") == 0)
+			{
+				logRetentionDays = atoi(value);
+			}
 		}
 	}
 
@@ -237,6 +236,9 @@ void PluginConfig::Load()
 		}
 	}
 	*kept = '\0';
+
+	mmu::log::SetToFile(logToFile);
+	mmu::log::SetRetentionDays(logRetentionDays);
 
 	size_t urlLen = strlen(apiUrl);
 	if (urlLen > 0 && apiUrl[urlLen - 1] == '/')

@@ -3,6 +3,7 @@
 #include "server_info.h"
 #include "globals.h"
 #include "plugin.h"
+#include "utils/log.h"
 #include <tier1/convar.h>
 #include <steam/steam_gameserver.h>
 
@@ -60,8 +61,7 @@ void ServerInfo::Cache()
 
 	Refresh();
 
-	META_CONPRINTF("[FKZ] Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n", hostname, mapName, version, tickrate,
-				   secure ? "yes" : "no");
+	MMU_LOG_INFO("Cached: hostname=%s, map=%s, version=%s, tickrate=%d, secure=%s\n", hostname, mapName, version, tickrate, secure ? "yes" : "no");
 }
 
 void ServerInfo::Refresh()

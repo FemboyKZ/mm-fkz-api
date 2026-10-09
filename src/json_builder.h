@@ -4,6 +4,9 @@
 #include <string>
 
 std::string JsonEscape(const char *str);
+
+// In game, human and confirmed by Steam. Until then the SteamID a report would carry is only the client's claim.
+bool IsReportedPlayer(int slot);
 std::string BuildPayloadJson();
 std::string BuildHibernateJson();
 

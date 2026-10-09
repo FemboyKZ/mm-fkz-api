@@ -21,7 +21,10 @@
 #include "player_manager.h"
 #include "plugin.h"
 
+#include "utils/log.h"
+
 #include "interfaces/sql_mm/sql_mm.h"
+#include "utils/sql.h"
 #include "interfaces/cs2admin/ics2admin.h"
 
 #include <engine/igameeventsystem.h>
@@ -176,7 +179,7 @@ static void SavePref(int slot)
 
 	int muted = g_muted[slot] ? 1 : 0;
 	char query[256];
-	if (Database_GetType() == DatabaseType::MySQL)
+	if (Database_GetConnection().IsMySQL())
 	{
 		snprintf(query, sizeof(query),
 				 "INSERT INTO %s (steamid, crosschat_muted) VALUES "
@@ -192,7 +195,7 @@ static void SavePref(int slot)
 				 Database_PrefsTable(), (unsigned long long)p.steamId64, muted, muted);
 	}
 
-	Database_GetConnection()->Query(query, [](ISQLQuery * /*q*/) {});
+	Database_GetConnection().Query(query, nullptr);
 }
 
 void CrossChat_LoadPrefs(int slot, uint64_t steamId64)
@@ -205,28 +208,28 @@ void CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 	char query[256];
 	snprintf(query, sizeof(query), "SELECT crosschat_muted FROM %s WHERE steamid = %llu;", Database_PrefsTable(), (unsigned long long)steamId64);
 
-	Database_GetConnection()->Query(query,
-									[slot, steamId64](ISQLQuery *q)
-									{
-										// The slot may have been recycled before this async result arrived.
-										const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-										if (!p.connected || p.steamId64 != steamId64)
-										{
-											return;
-										}
-										ISQLResult *result = q->GetResultSet();
-										if (result && result->FetchRow())
-										{
-											g_muted[slot] = result->GetInt(0) != 0;
-										}
-									});
+	Database_GetConnection().Query(query,
+								   [slot, steamId64](ISQLQuery *q)
+								   {
+									   // The slot may have been recycled before this async result arrived.
+									   const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+									   if (!q || !p.connected || p.steamId64 != steamId64)
+									   {
+										   return;
+									   }
+									   ISQLResult *result = q->GetResultSet();
+									   if (result && result->FetchRow())
+									   {
+										   g_muted[slot] = result->GetInt(0) != 0;
+									   }
+								   });
 }
 
 static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, uint32 /*len*/, void * /*data*/)
 {
 	if (statusCode != 200)
 	{
-		META_CONPRINTF("[FKZ] chat POST returned HTTP %d\n", statusCode);
+		MMU_LOG_WARN("chat POST returned HTTP %d\n", statusCode);
 	}
 }
 
@@ -398,7 +401,7 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 			g_nextRetryTime = Plat_FloatTime() + CHAT_RETRY_SECONDS;
 			if (++g_parseFailures >= CHAT_MAX_PARSE_FAILURES)
 			{
-				META_CONPRINTF("[FKZ] chat stream unreadable %d times, resyncing cursor\n", g_parseFailures);
+				MMU_LOG_WARN("chat stream unreadable %d times, resyncing cursor\n", g_parseFailures);
 				g_parseFailures = 0;
 				g_chatCursor = -1; // handshake past the backlog we cannot parse
 			}
@@ -462,7 +465,7 @@ void CrossChat_Tick(bool hasHumans)
 	// Checked before the hasHumans gate so an empty server does not sit in that state until someone joins.
 	if (g_streamActive && Plat_FloatTime() - g_streamStartTime > CHAT_STREAM_DEADLINE_SECONDS)
 	{
-		META_CONPRINTF("[FKZ] chat stream stalled past %.0fs, reopening\n", CHAT_STREAM_DEADLINE_SECONDS);
+		MMU_LOG_WARN("chat stream stalled past %.0fs, reopening\n", CHAT_STREAM_DEADLINE_SECONDS);
 		g_streamActive = false; // StartChatStream bumps the generation, orphaning the old completion
 	}
 

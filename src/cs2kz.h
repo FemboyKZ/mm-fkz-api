@@ -29,7 +29,7 @@ int CS2KZ_TakePlaytimeDeltas();
 // A report that never reached the API gives its deltas back, so the next one carries them instead of dropping them.
 void CS2KZ_OnReportResult(int reportId, bool accepted);
 
-// Whether this slot has playtime no report has taken yet.
+// Whether this slot has playtime no report has taken yet, enough for a report to show.
 bool CS2KZ_HasPendingPlaytime(int slot);
 
 // Per-player timer/mode object for the report, or "null" when cs2kz has nothing for this slot.

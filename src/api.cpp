@@ -23,6 +23,8 @@
 #include "http_client.h"
 #include "plugin.h"
 
+#include "utils/log.h"
+
 FKZApi g_FKZApi;
 
 namespace
@@ -75,12 +77,12 @@ namespace
 	{
 		if (!cb)
 		{
-			META_CONPRINTF("[FKZ] API request: invalid callback\n");
+			MMU_LOG_WARN("API request: invalid callback\n");
 			return false;
 		}
 		if (g_Config.apiUrl[0] == '\0')
 		{
-			META_CONPRINTF("[FKZ] API request: no api_url configured\n");
+			MMU_LOG_WARN("API request: no api_url configured\n");
 			return false;
 		}
 

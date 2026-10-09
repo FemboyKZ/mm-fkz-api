@@ -15,6 +15,7 @@
 #include "json_builder.h"
 #include "player_manager.h"
 #include "plugin.h"
+#include "utils/log.h"
 #include <ISmmAPI.h>
 #include "interfaces/cs2kz/ics2kz.h"
 #include <tier0/platform.h>
@@ -67,11 +68,11 @@ void CS2KZ_Refresh()
 
 	if (g_pCS2KZ && !previous)
 	{
-		META_CONPRINTF("[FKZ] cs2kz-metamod detected (%s), mode data enabled\n", CS2KZ_INTERFACE);
+		MMU_LOG_INFO("cs2kz-metamod detected (%s), mode data enabled\n", CS2KZ_INTERFACE);
 	}
 	else if (!g_pCS2KZ && previous)
 	{
-		META_CONPRINTF("[FKZ] cs2kz-metamod unloaded, mode data disabled\n");
+		MMU_LOG_INFO("cs2kz-metamod unloaded, mode data disabled\n");
 	}
 }
 
@@ -165,6 +166,11 @@ int CS2KZ_TakePlaytimeDeltas()
 	sent.reportId = s_nextReportId++;
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
+		// A player the report left out keeps theirs for the one that lists them.
+		if (!IsReportedPlayer(i))
+		{
+			continue;
+		}
 		for (int m = 0; m < MODE_COUNT; m++)
 		{
 			sent.seconds[i][m] = s_playtime[i].seconds[m];
@@ -202,7 +208,8 @@ bool CS2KZ_HasPendingPlaytime(int slot)
 	}
 	for (int m = 0; m < MODE_COUNT; m++)
 	{
-		if (s_playtime[slot].seconds[m] > 0.0)
+		// Less than the report's one decimal shows is not worth a report, or everyone leaving at a map change sends one each.
+		if (s_playtime[slot].seconds[m] >= 0.05)
 		{
 			return true;
 		}

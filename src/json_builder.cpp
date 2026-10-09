@@ -61,6 +61,12 @@ std::string JsonEscape(const char *str)
 	return out;
 }
 
+bool IsReportedPlayer(int slot)
+{
+	const PlayerInfo &player = g_PlayerManager.GetPlayer(slot);
+	return player.connected && player.inGame && !player.isBot && g_pEngineServer->IsClientFullyAuthenticated(CPlayerSlot(slot));
+}
+
 // Enumerates loaded Metamod plugins for the report's plugins[] array.
 // ISmmPluginManager has no iterator, so we Query sequential ids and stop after a run of misses.
 // Query returns false (silently) for unknown ids.
@@ -169,7 +175,11 @@ std::string BuildPayloadJson()
 	g_ServerInfo.Refresh();
 
 	// Player counts
-	int playerCount = g_PlayerManager.GetHumanPlayerCount();
+	int playerCount = 0;
+	for (int i = 0; i < MAXPLAYERS; i++)
+	{
+		playerCount += IsReportedPlayer(i) ? 1 : 0;
+	}
 	int botCount = g_PlayerManager.GetBotCount();
 	int maxPlayers = 0;
 	if (g_pNetworkServerService)
@@ -211,7 +221,7 @@ std::string BuildPayloadJson()
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		const PlayerInfo &player = g_PlayerManager.GetPlayer(i);
-		if (!player.connected || !player.inGame || player.isBot)
+		if (!IsReportedPlayer(i))
 		{
 			continue;
 		}

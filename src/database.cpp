@@ -4,27 +4,23 @@
  * See database.h.
  */
 
-#include <vector>
-
 #include "database.h"
 #include "config.h"
 #include "cross_chat.h"
 #include "player_manager.h"
 #include "plugin.h"
 
+#include "utils/log.h"
+#include "utils/sql.h"
+
 #include <tier0/platform.h>
 #include <tier1/strtools.h>
 
-#include "interfaces/sql_mm/sql_mm.h"
-#include "interfaces/sql_mm/sqlite_mm.h"
-#include "interfaces/sql_mm/mysql_mm.h"
-
-static ISQLConnection *g_dbConnection = nullptr;
-static DatabaseType g_dbType = DatabaseType::None;
+static mmu::sql::Connection g_db;
 static bool g_dbReady = false;
-static bool g_dbDestroyPending = false;
-// When a failed connect is tried again, 0 while none is owed.
-static double g_dbRetryTime = 0.0;
+static bool g_schemaCreated = false;
+// When a schema that could not be created is tried again, 0 while none is owed.
+static double g_schemaRetryTime = 0.0;
 static char g_prefsTable[64];
 
 #define DB_RETRY_SECONDS 30.0
@@ -35,17 +31,12 @@ static char g_prefsTable[64];
 
 bool Database_IsReady()
 {
-	return g_dbReady && g_dbConnection != nullptr && !g_dbDestroyPending;
+	return g_dbReady && g_db.IsConnected();
 }
 
-ISQLConnection *Database_GetConnection()
+mmu::sql::Connection &Database_GetConnection()
 {
-	return g_dbConnection;
-}
-
-DatabaseType Database_GetType()
-{
-	return g_dbType;
+	return g_db;
 }
 
 const char *Database_PrefsTable()
@@ -53,10 +44,17 @@ const char *Database_PrefsTable()
 	return g_prefsTable;
 }
 
-static void OnMigrationDone(std::vector<ISQLQuery *> /*queries*/)
+static void OnSchemaSettled(ISQLQuery * /*q*/)
 {
+	if (!g_schemaCreated)
+	{
+		MMU_LOG_WARN("Could not create the table %s, trying again in %.0fs.\n", g_prefsTable, DB_RETRY_SECONDS);
+		g_schemaRetryTime = Plat_FloatTime() + DB_RETRY_SECONDS;
+		return;
+	}
+
 	g_dbReady = true;
-	META_CONPRINTF("[FKZ] Local database ready.\n");
+	MMU_LOG_INFO("Local database ready.\n");
 
 	// Anyone put in server before now, on a late load or ahead of a slow connect, had their prefs load skipped.
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
@@ -69,27 +67,15 @@ static void OnMigrationDone(std::vector<ISQLQuery *> /*queries*/)
 	}
 }
 
-static void OnMigrationFail(std::string error, int failIndex)
+static void CreateSchema()
 {
-	META_CONPRINTF("[FKZ] Database migration failed at %d: %s\n", failIndex, error.c_str());
-}
-
-static void OnConnected(bool success)
-{
-	if (!success)
-	{
-		META_CONPRINTF("[FKZ] Database connection failed, trying again in %.0fs.\n", DB_RETRY_SECONDS);
-		// Destroy() erases the connection from the vector sql_mm is iterating to reach this callback, so it waits for the next frame.
-		g_dbDestroyPending = true;
-		return;
-	}
-
 	char create[256];
-	snprintf(create, sizeof(create), g_dbType == DatabaseType::MySQL ? CREATE_PREFS_MYSQL : CREATE_PREFS_SQLITE, g_prefsTable);
+	snprintf(create, sizeof(create), g_db.IsMySQL() ? CREATE_PREFS_MYSQL : CREATE_PREFS_SQLITE, g_prefsTable);
 
-	Transaction txn;
-	txn.queries.push_back(create);
-	g_dbConnection->ExecuteTransaction(txn, OnMigrationDone, OnMigrationFail);
+	g_schemaCreated = false;
+	g_db.Query(create, [](ISQLQuery *q) { g_schemaCreated = q != nullptr; });
+	// A query that failed is only heard of once a later one is answered.
+	g_db.Query("SELECT 1", OnSchemaSettled);
 }
 
 void Database_Init()
@@ -98,67 +84,54 @@ void Database_Init()
 	{
 		return;
 	}
-	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.dbPrefix);
 
-	ISQLInterface *sqlInterface = (ISQLInterface *)g_SMAPI->MetaFactory(SQLMM_INTERFACE, nullptr, nullptr);
-	if (!sqlInterface)
-	{
-		META_CONPRINTF("[FKZ] sql_mm plugin not found, local database disabled.\n");
-		return;
-	}
-
+	mmu::sql::DbType type;
+	mmu::sql::ConnectParams params;
 	if (V_stricmp(g_Config.dbDriver, "sqlite") == 0)
 	{
-		SQLiteConnectionInfo info;
+		type = mmu::sql::DbType::SQLite;
 		// sql_mm resolves this relative to the game dir and creates missing dirs.
-		info.database = g_Config.dbDatabase;
-		g_dbConnection = sqlInterface->GetSQLiteClient()->CreateSQLiteConnection(info);
-		g_dbType = DatabaseType::SQLite;
+		params.path = g_Config.dbDatabase;
 	}
 	else if (V_stricmp(g_Config.dbDriver, "mysql") == 0)
 	{
-		MySQLConnectionInfo info = {g_Config.dbHost, g_Config.dbUser, g_Config.dbPass, g_Config.dbDatabase, g_Config.dbPort, 60};
-		g_dbConnection = sqlInterface->GetMySQLClient()->CreateMySQLConnection(info);
-		g_dbType = DatabaseType::MySQL;
+		type = mmu::sql::DbType::MySQL;
+		params.host = g_Config.dbHost;
+		params.user = g_Config.dbUser;
+		params.pass = g_Config.dbPass;
+		params.database = g_Config.dbDatabase;
+		params.port = g_Config.dbPort;
 	}
 	else
 	{
-		META_CONPRINTF("[FKZ] Unknown db_driver '%s', local database disabled.\n", g_Config.dbDriver);
+		MMU_LOG_WARN("Unknown db_driver '%s', local database disabled.\n", g_Config.dbDriver);
 		return;
 	}
 
-	if (!g_dbConnection)
+	if (!g_db.Init(type))
 	{
-		META_CONPRINTF("[FKZ] Failed to create database connection.\n");
-		g_dbType = DatabaseType::None;
 		return;
 	}
-
-	g_dbConnection->Connect(OnConnected);
+	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.dbPrefix);
+	g_db.SetSchemaHook(CreateSchema);
+	g_db.Connect(params, nullptr);
 }
 
 void Database_RunFrame()
 {
-	if (g_dbDestroyPending)
+	double now = Plat_FloatTime();
+	g_db.RunFrame(now);
+
+	if (g_schemaRetryTime > 0.0 && now >= g_schemaRetryTime)
 	{
-		g_dbDestroyPending = false;
-		Database_Cleanup();
-		g_dbRetryTime = Plat_FloatTime() + DB_RETRY_SECONDS;
-	}
-	else if (g_dbRetryTime > 0.0 && Plat_FloatTime() >= g_dbRetryTime)
-	{
-		g_dbRetryTime = 0.0;
-		Database_Init();
+		g_schemaRetryTime = 0.0;
+		CreateSchema();
 	}
 }
 
 void Database_Cleanup()
 {
 	g_dbReady = false;
-	if (g_dbConnection)
-	{
-		g_dbConnection->Destroy();
-		g_dbConnection = nullptr;
-	}
-	g_dbType = DatabaseType::None;
+	g_schemaRetryTime = 0.0;
+	g_db.Shutdown();
 }

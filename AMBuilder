@@ -22,6 +22,8 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/database.cpp",
         "src/api.cpp",
         "src/cs2kz.cpp",
+        "mm-utils/utils/log.cpp",
+        "mm-utils/utils/sql.cpp",
     ]
 
     # SayText2 (cross-chat) lives in usermessages.proto, which imports

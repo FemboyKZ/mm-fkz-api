@@ -7,6 +7,8 @@
 #include "http_client.h"
 #include "plugin.h"
 
+#include "utils/log.h"
+
 HttpClient g_HttpClient;
 
 // One in-flight request.
@@ -179,20 +181,20 @@ bool HttpClient::Request(const char *method, const char *url, const char *body, 
 	ISteamHTTP *http = SteamHTTP();
 	if (!http)
 	{
-		META_CONPRINTF("[FKZ] Steam HTTP not available, skipping %s %s\n", method, url);
+		MMU_LOG_WARN("Steam HTTP not available, skipping %s %s\n", method, url);
 		return false;
 	}
 	if (!m_ready)
 	{
 		m_ready = true;
-		META_CONPRINTF("[FKZ] Steam API recovered\n");
+		MMU_LOG_INFO("Steam API recovered\n");
 	}
 
 	EHTTPMethod eMethod = MethodFromString(method);
 	HTTPRequestHandle req = http->CreateHTTPRequest(eMethod, url);
 	if (req == INVALID_HTTPREQUEST_HANDLE)
 	{
-		META_CONPRINTF("[FKZ] Failed to create HTTP request %s %s\n", method, url);
+		MMU_LOG_WARN("Failed to create HTTP request %s %s\n", method, url);
 		return false;
 	}
 
@@ -215,7 +217,7 @@ bool HttpClient::Request(const char *method, const char *url, const char *body, 
 	SteamAPICall_t hCall;
 	if (!http->SendHTTPRequest(req, &hCall))
 	{
-		META_CONPRINTF("[FKZ] Failed to send HTTP request %s %s\n", method, url);
+		MMU_LOG_WARN("Failed to send HTTP request %s %s\n", method, url);
 		http->ReleaseHTTPRequest(req);
 		return false;
 	}

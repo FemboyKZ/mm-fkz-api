@@ -18,6 +18,8 @@
 #include "reporter.h"
 #include "server_info.h"
 
+#include "utils/log.h"
+
 #include <ISmmAPI.h>
 #include <cstring>
 #include <eiface.h>
@@ -73,6 +75,8 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 {
 	PLUGIN_SAVEVARS();
 
+	mmu::log::Init("FKZ", PLUGIN_NAME);
+
 	// ismm->MetaFactory(FKZ_API_INTERFACE) -> our OnMetamodQuery().
 	ismm->AddListener(this, this);
 
@@ -93,12 +97,12 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 	if (g_Config.apiUrl[0] == '\0')
 	{
-		META_CONPRINTF("[FKZ] No api_url configured, reporting disabled\n");
+		MMU_LOG_WARN("No api_url configured, reporting disabled\n");
 	}
 	else
 	{
-		META_CONPRINTF("[FKZ] v%s loaded - reporting to %s every %.0fs (key=%s)\n", GetVersion(), g_Config.apiUrl, g_Config.interval,
-					   g_Config.apiKey[0] != '\0' ? "set" : "NOT SET");
+		MMU_LOG_INFO("v%s loaded - reporting to %s every %.0fs (key=%s)\n", GetVersion(), g_Config.apiUrl, g_Config.interval,
+					 g_Config.apiKey[0] != '\0' ? "set" : "NOT SET");
 	}
 
 	// Register hooks
@@ -136,6 +140,8 @@ bool MMSPlugin::Unload(char *error, size_t maxlen)
 
 	g_HttpClient.ReleasePending();
 	Database_Cleanup();
+
+	mmu::log::Shutdown();
 
 	return true;
 }
@@ -191,7 +197,7 @@ KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const
 	// Reset report timer, first report after short delay
 	m_lastReportTime = Plat_FloatTime() + 2.0 - g_Config.interval;
 
-	META_CONPRINTF("[FKZ] Server started, reporting active\n");
+	MMU_LOG_INFO("Server started, reporting active\n");
 	return {KHook::Action::Ignore};
 }
 

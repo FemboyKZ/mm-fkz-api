@@ -84,6 +84,7 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2GameClients, ISource2GameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngineServer, IVEngineServer2, INTERFACEVERSION_VENGINESERVER);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);
+	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
@@ -182,6 +183,11 @@ void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret)
 	return NULL;
 }
 
+CON_COMMAND_F(mm_fkz_reload, "Reload fkz-api core.cfg.", FCVAR_GAMEDLL | FCVAR_RELEASE)
+{
+	g_Config.Load();
+}
+
 // Hooks
 
 KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,
@@ -191,6 +197,7 @@ KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const
 	m_serverActive = true;
 	m_hibernateSent = false;
 
+	g_Config.Load();
 	g_HttpClient.Init();
 	g_ServerInfo.Cache();
 

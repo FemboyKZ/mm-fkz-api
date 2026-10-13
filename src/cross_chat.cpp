@@ -339,8 +339,8 @@ bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext
 	snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p.steamId64);
 
 	std::string body = "{\"ip\":\"" + FKZ_JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" + steamId + "\",\"name\":\""
-					   + FKZ_JsonEscape(p.name) + "\",\"message\":\"" + FKZ_JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
-					   + "}";
+					   + FKZ_JsonEscape(p.name) + "\",\"message\":\"" + FKZ_JsonEscape(text.c_str())
+					   + "\",\"muted\":" + (g_muted[slot] ? "true" : "false") + "}";
 
 	std::string url = g_FKZConfig.apiUrl + "/chat/messages";
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);

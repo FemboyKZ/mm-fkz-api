@@ -23,7 +23,7 @@ struct FKZConfig
 	mmu::config::LogBlock log;
 };
 
-// Load and parse a core.cfg. A file that can't be read leaves `config` as it was.
+// A file that can't be read leaves `config` as it was.
 bool FKZ_LoadConfig(const char *path, FKZConfig &config);
 
 extern FKZConfig g_FKZConfig;

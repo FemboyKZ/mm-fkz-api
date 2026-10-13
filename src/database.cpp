@@ -83,7 +83,7 @@ void FKZ_Database_Init()
 	{
 		return;
 	}
-	// The prefix was joined as is before, so an empty one or one ending in an underscore keeps its table.
+	// Old prefixes brought their own underscore.
 	const std::string &prefix = g_FKZConfig.database.prefix;
 	const char *sep = (prefix.empty() || prefix.back() == '_') ? "" : "_";
 	snprintf(g_prefsTable, sizeof(g_prefsTable), "%s%splayer_prefs", prefix.c_str(), sep);

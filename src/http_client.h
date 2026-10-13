@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_HTTP_CLIENT_H_
-#define _INCLUDE_HTTP_CLIENT_H_
+#ifndef _INCLUDE_FKZ_HTTP_CLIENT_H_
+#define _INCLUDE_FKZ_HTTP_CLIENT_H_
 
 #include <steam/isteamhttp.h>
 #include <steam/steam_gameserver.h>
@@ -58,4 +58,4 @@ private:
 
 extern HttpClient g_HttpClient;
 
-#endif // _INCLUDE_HTTP_CLIENT_H_
+#endif // _INCLUDE_FKZ_HTTP_CLIENT_H_

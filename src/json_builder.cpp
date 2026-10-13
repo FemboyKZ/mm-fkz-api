@@ -1,7 +1,7 @@
 #include <cstdio>
 #include <cstring>
 
-#include "config.h"
+#include "config/config.h"
 #include "cs2kz.h"
 #include "globals.h"
 #include "json_builder.h"
@@ -128,9 +128,9 @@ static std::string BuildPluginsJson()
 // Resolves IP from config or hostip convar
 void ResolveIpPort(char *ip, int ipLen, int &port)
 {
-	if (!g_Config.serverIp.empty())
+	if (!g_FKZConfig.serverIp.empty())
 	{
-		strncpy(ip, g_Config.serverIp.c_str(), ipLen - 1);
+		strncpy(ip, g_FKZConfig.serverIp.c_str(), ipLen - 1);
 		ip[ipLen - 1] = '\0';
 	}
 	else
@@ -147,7 +147,7 @@ void ResolveIpPort(char *ip, int ipLen, int &port)
 		}
 	}
 
-	port = g_Config.serverPort;
+	port = g_FKZConfig.serverPort;
 	if (port <= 0)
 	{
 		ConVarRefAbstract cvHostPort("hostport");

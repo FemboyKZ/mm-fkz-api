@@ -4,8 +4,8 @@
  * Configuration: <game>/cfg/fkz-api/core.cfg
  */
 
-#ifndef _INCLUDE_METAMOD_SOURCE_PLUGIN_H_
-#define _INCLUDE_METAMOD_SOURCE_PLUGIN_H_
+#ifndef _INCLUDE_FKZ_PLUGIN_H_
+#define _INCLUDE_FKZ_PLUGIN_H_
 
 #include "version_gen.h"
 #include <ISmmPlugin.h>
@@ -99,4 +99,4 @@ extern MMSPlugin g_ThisPlugin;
 
 PLUGIN_GLOBALVARS();
 
-#endif //_INCLUDE_METAMOD_SOURCE_PLUGIN_H_
+#endif //_INCLUDE_FKZ_PLUGIN_H_

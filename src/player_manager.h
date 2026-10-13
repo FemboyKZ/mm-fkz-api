@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_PLAYER_MANAGER_H_
-#define _INCLUDE_PLAYER_MANAGER_H_
+#ifndef _INCLUDE_FKZ_PLAYER_MANAGER_H_
+#define _INCLUDE_FKZ_PLAYER_MANAGER_H_
 
 #include <cstdint>
 #include "globals.h"
@@ -39,4 +39,4 @@ private:
 
 extern PlayerManager g_PlayerManager;
 
-#endif // _INCLUDE_PLAYER_MANAGER_H_
+#endif // _INCLUDE_FKZ_PLAYER_MANAGER_H_

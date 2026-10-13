@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_CS2KZ_H_
-#define _INCLUDE_CS2KZ_H_
+#ifndef _INCLUDE_FKZ_CS2KZ_H_
+#define _INCLUDE_FKZ_CS2KZ_H_
 
 #include <string>
 
@@ -40,4 +40,4 @@ std::string BuildCS2KZJson(int slot);
 // A mode with no time accrued is sent as null so the key stays visible without clobbering what the API already accrued.
 std::string BuildPlaytimeModesJson(int slot);
 
-#endif // _INCLUDE_CS2KZ_H_
+#endif // _INCLUDE_FKZ_CS2KZ_H_

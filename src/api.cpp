@@ -19,7 +19,7 @@
 #include <vector>
 
 #include "api.h"
-#include "config.h"
+#include "config/config.h"
 #include "http_client.h"
 #include "plugin.h"
 
@@ -80,13 +80,13 @@ namespace
 			MMU_LOG_WARN("API request: invalid callback\n");
 			return false;
 		}
-		if (g_Config.apiUrl.empty())
+		if (g_FKZConfig.apiUrl.empty())
 		{
 			MMU_LOG_WARN("API request: no api_url configured\n");
 			return false;
 		}
 
-		std::string url = g_Config.apiUrl;
+		std::string url = g_FKZConfig.apiUrl;
 		if (path[0] != '/')
 		{
 			url += '/';
@@ -94,7 +94,7 @@ namespace
 		url += path;
 
 		// Give the request at least the report interval before timing out
-		uint32 timeout = (uint32)(g_Config.interval > 10.0f ? g_Config.interval : 10.0f);
+		uint32 timeout = (uint32)(g_FKZConfig.interval > 10.0f ? g_FKZConfig.interval : 10.0f);
 
 		ApiCallCtx *ctx = new ApiCallCtx {owner, cb, data};
 		if (!g_HttpClient.Request(method, url.c_str(), body, timeout, ApiTrampoline, ctx))
@@ -162,10 +162,10 @@ int FKZApi::GetApiBase(char *buffer, int maxlength)
 {
 	if (buffer && maxlength > 0)
 	{
-		strncpy(buffer, g_Config.apiUrl.c_str(), maxlength - 1);
+		strncpy(buffer, g_FKZConfig.apiUrl.c_str(), maxlength - 1);
 		buffer[maxlength - 1] = '\0';
 	}
-	return (int)g_Config.apiUrl.size();
+	return (int)g_FKZConfig.apiUrl.size();
 }
 
 bool FKZApi::GetHealth(PluginId owner, FKZ_ResponseCallback callback, void *data)

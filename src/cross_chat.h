@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_CROSS_CHAT_H_
-#define _INCLUDE_CROSS_CHAT_H_
+#ifndef _INCLUDE_FKZ_CROSS_CHAT_H_
+#define _INCLUDE_FKZ_CROSS_CHAT_H_
 
 #include <cstdint>
 #include <tier1/convar.h>
@@ -27,4 +27,4 @@ void CrossChat_LoadPrefs(int slot, uint64_t steamId64);
 // Clear a slot's mute state when the player leaves.
 void CrossChat_OnClientDisconnect(int slot);
 
-#endif // _INCLUDE_CROSS_CHAT_H_
+#endif // _INCLUDE_FKZ_CROSS_CHAT_H_

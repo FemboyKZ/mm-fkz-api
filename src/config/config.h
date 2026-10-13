@@ -1,11 +1,11 @@
-#ifndef _INCLUDE_CONFIG_H_
-#define _INCLUDE_CONFIG_H_
+#ifndef _INCLUDE_FKZ_CONFIG_H_
+#define _INCLUDE_FKZ_CONFIG_H_
 
 #include "utils/config_blocks.h"
 
 #include <string>
 
-struct PluginConfig
+struct FKZConfig
 {
 	std::string apiUrl;
 	std::string apiKey;
@@ -21,10 +21,11 @@ struct PluginConfig
 	mmu::config::GeneralBlock general;
 
 	mmu::config::LogBlock log;
-
-	void Load();
 };
 
-extern PluginConfig g_Config;
+// Load and parse a core.cfg. A file that can't be read leaves `config` as it was.
+bool FKZ_LoadConfig(const char *path, FKZConfig &config);
 
-#endif // _INCLUDE_CONFIG_H_
+extern FKZConfig g_FKZConfig;
+
+#endif // _INCLUDE_FKZ_CONFIG_H_

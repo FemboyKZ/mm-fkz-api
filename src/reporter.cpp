@@ -9,7 +9,7 @@
 #include <string>
 
 #include "api.h"
-#include "config.h"
+#include "config/config.h"
 #include "cs2kz.h"
 #include "json_builder.h"
 #include "plugin.h"
@@ -42,7 +42,7 @@ static void OnReportResponse(bool /*success*/, int statusCode, const char *body,
 		g_failCount++;
 		MMU_LOG_WARN("POST %s/servers/status transport error (no HTTP response: "
 					 "timeout/DNS/TLS/conn) (fail #%d)\n",
-					 g_Config.apiUrl.c_str(), g_failCount);
+					 g_FKZConfig.apiUrl.c_str(), g_failCount);
 	}
 	else
 	{
@@ -82,7 +82,7 @@ void SendReport()
 
 void SendHibernate()
 {
-	if (g_Config.apiUrl.empty())
+	if (g_FKZConfig.apiUrl.empty())
 	{
 		return;
 	}

@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_SERVER_INFO_H_
-#define _INCLUDE_SERVER_INFO_H_
+#ifndef _INCLUDE_FKZ_SERVER_INFO_H_
+#define _INCLUDE_FKZ_SERVER_INFO_H_
 
 struct ServerInfo
 {
@@ -20,4 +20,4 @@ struct ServerInfo
 
 extern ServerInfo g_ServerInfo;
 
-#endif // _INCLUDE_SERVER_INFO_H_
+#endif // _INCLUDE_FKZ_SERVER_INFO_H_

@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_JSON_BUILDER_H_
-#define _INCLUDE_JSON_BUILDER_H_
+#ifndef _INCLUDE_FKZ_JSON_BUILDER_H_
+#define _INCLUDE_FKZ_JSON_BUILDER_H_
 
 #include <string>
 
@@ -12,4 +12,4 @@ std::string BuildHibernateJson();
 
 void ResolveIpPort(char *ip, int ipLen, int &port);
 
-#endif // _INCLUDE_JSON_BUILDER_H_
+#endif // _INCLUDE_FKZ_JSON_BUILDER_H_

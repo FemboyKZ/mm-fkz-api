@@ -3,7 +3,7 @@
 #include <cstring>
 #include <string>
 
-#include "config.h"
+#include "config/config.h"
 #include "http_client.h"
 #include "plugin.h"
 
@@ -200,9 +200,9 @@ bool HttpClient::Request(const char *method, const char *url, const char *body, 
 
 	http->SetHTTPRequestHeaderValue(req, "Accept", "application/json");
 
-	if (!g_Config.apiKey.empty())
+	if (!g_FKZConfig.apiKey.empty())
 	{
-		http->SetHTTPRequestHeaderValue(req, "Authorization", ("Bearer " + g_Config.apiKey).c_str());
+		http->SetHTTPRequestHeaderValue(req, "Authorization", ("Bearer " + g_FKZConfig.apiKey).c_str());
 	}
 
 	http->SetHTTPRequestNetworkActivityTimeout(req, timeoutSec);

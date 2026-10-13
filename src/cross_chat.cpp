@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-#include "config.h"
+#include "config/config.h"
 #include "cross_chat.h"
 #include "database.h"
 #include "globals.h"
@@ -152,7 +152,7 @@ static void NotifyMuteState(int slot, bool muted)
 	filter.AddRecipient(slot);
 	if (muted)
 	{
-		char prefix = g_Config.general.commandPrefix[0] ? g_Config.general.commandPrefix[0] : g_Config.general.silentCommandPrefix[0];
+		char prefix = g_FKZConfig.general.commandPrefix[0] ? g_FKZConfig.general.commandPrefix[0] : g_FKZConfig.general.silentCommandPrefix[0];
 		char line[128];
 		snprintf(line, sizeof(line), " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages hidden. Type %ccrosschat to show.", prefix);
 		SendChatLine(filter, line);
@@ -235,7 +235,7 @@ static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, 
 
 bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	if (g_Config.apiUrl.empty() || !cmd.IsValidRef())
+	if (g_FKZConfig.apiUrl.empty() || !cmd.IsValidRef())
 	{
 		return false;
 	}
@@ -296,8 +296,8 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		return false;
 	}
 
-	bool silent = g_Config.general.silentCommandPrefix.find(text[0]) != std::string::npos;
-	bool isCommand = silent || g_Config.general.commandPrefix.find(text[0]) != std::string::npos;
+	bool silent = g_FKZConfig.general.silentCommandPrefix.find(text[0]) != std::string::npos;
+	bool isCommand = silent || g_FKZConfig.general.commandPrefix.find(text[0]) != std::string::npos;
 
 	// Mute toggle.
 	std::string command = text.substr(1, text.find_first_of(" \t", 1) - 1);
@@ -342,7 +342,7 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 					   + JsonEscape(p.name) + "\",\"message\":\"" + JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
 					   + "}";
 
-	std::string url = g_Config.apiUrl + "/chat/messages";
+	std::string url = g_FKZConfig.apiUrl + "/chat/messages";
 	g_HttpClient.Request("POST", url.c_str(), body.c_str(), 10, OnChatPost, nullptr);
 	return false;
 }
@@ -440,7 +440,7 @@ static void StartChatStream()
 	ResolveIpPort(ip, sizeof(ip), port);
 
 	char url[1024];
-	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_Config.apiUrl.c_str(), g_chatCursor, ip, port);
+	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_FKZConfig.apiUrl.c_str(), g_chatCursor, ip, port);
 
 	void *gen = (void *)(uintptr_t)(++g_streamGen);
 	if (g_HttpClient.Request("GET", url, nullptr, CHAT_STREAM_TIMEOUT_SECONDS, OnChatStream, gen))
@@ -456,7 +456,7 @@ static void StartChatStream()
 
 void CrossChat_Tick(bool hasHumans)
 {
-	if (g_Config.apiUrl.empty())
+	if (g_FKZConfig.apiUrl.empty())
 	{
 		return;
 	}

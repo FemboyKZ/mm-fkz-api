@@ -167,7 +167,7 @@ static void NotifyMuteState(int slot, bool muted)
 // Upsert keyed by steamID. char[] query binds the non-format Query overload.
 static void SavePref(int slot)
 {
-	if (!Database_IsReady())
+	if (!FKZ_Database_IsReady())
 	{
 		return;
 	}
@@ -198,9 +198,9 @@ static void SavePref(int slot)
 	Database_GetConnection().Query(query, nullptr);
 }
 
-void CrossChat_LoadPrefs(int slot, uint64_t steamId64)
+void FKZ_CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 {
-	if (!Database_IsReady() || slot < 0 || slot >= MAXPLAYERS || steamId64 == 0)
+	if (!FKZ_Database_IsReady() || slot < 0 || slot >= MAXPLAYERS || steamId64 == 0)
 	{
 		return;
 	}
@@ -233,7 +233,7 @@ static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, 
 	}
 }
 
-bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
 	if (g_FKZConfig.apiUrl.empty() || !cmd.IsValidRef())
 	{
@@ -333,13 +333,13 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 
 	char ip[64];
 	int port;
-	ResolveIpPort(ip, sizeof(ip), port);
+	FKZ_ResolveIpPort(ip, sizeof(ip), port);
 
 	char steamId[32];
 	snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p.steamId64);
 
-	std::string body = "{\"ip\":\"" + JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" + steamId + "\",\"name\":\""
-					   + JsonEscape(p.name) + "\",\"message\":\"" + JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
+	std::string body = "{\"ip\":\"" + FKZ_JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" + steamId + "\",\"name\":\""
+					   + FKZ_JsonEscape(p.name) + "\",\"message\":\"" + FKZ_JsonEscape(text.c_str()) + "\",\"muted\":" + (g_muted[slot] ? "true" : "false")
 					   + "}";
 
 	std::string url = g_FKZConfig.apiUrl + "/chat/messages";
@@ -430,14 +430,14 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 			}
 		}
 	}
-	// CrossChat_Tick re-opens the poll on the next game frame.
+	// FKZ_CrossChat_Tick re-opens the poll on the next game frame.
 }
 
 static void StartChatStream()
 {
 	char ip[64];
 	int port;
-	ResolveIpPort(ip, sizeof(ip), port);
+	FKZ_ResolveIpPort(ip, sizeof(ip), port);
 
 	char url[1024];
 	snprintf(url, sizeof(url), "%s/chat/stream?after=%d&ip=%s&port=%d", g_FKZConfig.apiUrl.c_str(), g_chatCursor, ip, port);
@@ -454,7 +454,7 @@ static void StartChatStream()
 	}
 }
 
-void CrossChat_Tick(bool hasHumans)
+void FKZ_CrossChat_Tick(bool hasHumans)
 {
 	if (g_FKZConfig.apiUrl.empty())
 	{
@@ -476,7 +476,7 @@ void CrossChat_Tick(bool hasHumans)
 	StartChatStream();
 }
 
-void CrossChat_OnClientDisconnect(int slot)
+void FKZ_CrossChat_OnClientDisconnect(int slot)
 {
 	if (slot >= 0 && slot <= MAXPLAYERS)
 	{

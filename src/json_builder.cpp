@@ -12,7 +12,7 @@
 #include <tier0/platform.h>
 #include <tier1/convar.h>
 
-std::string JsonEscape(const char *str)
+std::string FKZ_JsonEscape(const char *str)
 {
 	if (!str)
 	{
@@ -61,7 +61,7 @@ std::string JsonEscape(const char *str)
 	return out;
 }
 
-bool IsReportedPlayer(int slot)
+bool FKZ_IsReportedPlayer(int slot)
 {
 	const PlayerInfo &player = g_PlayerManager.GetPlayer(slot);
 	return player.connected && player.inGame && !player.isBot && g_pEngineServer->IsClientFullyAuthenticated(CPlayerSlot(slot));
@@ -116,8 +116,8 @@ static std::string BuildPluginsJson()
 		}
 		first = false;
 
-		arr += "{\"name\":\"" + JsonEscape(name) + "\",";
-		arr += "\"file\":\"" + JsonEscape(file ? file : "") + "\",";
+		arr += "{\"name\":\"" + FKZ_JsonEscape(name) + "\",";
+		arr += "\"file\":\"" + FKZ_JsonEscape(file ? file : "") + "\",";
 		arr += std::string("\"status\":\"") + (status == Pl_Running ? "running" : "paused") + "\"}";
 	}
 
@@ -126,7 +126,7 @@ static std::string BuildPluginsJson()
 }
 
 // Resolves IP from config or hostip convar
-void ResolveIpPort(char *ip, int ipLen, int &port)
+void FKZ_ResolveIpPort(char *ip, int ipLen, int &port)
 {
 	if (!g_FKZConfig.serverIp.empty())
 	{
@@ -162,7 +162,7 @@ void ResolveIpPort(char *ip, int ipLen, int &port)
 	}
 }
 
-std::string BuildPayloadJson()
+std::string FKZ_BuildPayloadJson()
 {
 	std::string json;
 	json.reserve(4096);
@@ -170,7 +170,7 @@ std::string BuildPayloadJson()
 	// Resolve IP and port
 	char ip[64];
 	int port;
-	ResolveIpPort(ip, sizeof(ip), port);
+	FKZ_ResolveIpPort(ip, sizeof(ip), port);
 
 	g_ServerInfo.Refresh();
 
@@ -178,7 +178,7 @@ std::string BuildPayloadJson()
 	int playerCount = 0;
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		playerCount += IsReportedPlayer(i) ? 1 : 0;
+		playerCount += FKZ_IsReportedPlayer(i) ? 1 : 0;
 	}
 	int botCount = g_PlayerManager.GetBotCount();
 	int maxPlayers = 0;
@@ -197,17 +197,17 @@ std::string BuildPayloadJson()
 
 	// Build server object
 	json += "{\"server\":{";
-	json += "\"hostname\":\"" + JsonEscape(g_ServerInfo.hostname) + "\",";
+	json += "\"hostname\":\"" + FKZ_JsonEscape(g_ServerInfo.hostname) + "\",";
 	json += "\"os\":\"" + std::string(g_ServerInfo.osName) + "\",";
-	json += "\"version\":\"" + JsonEscape(g_ServerInfo.version) + "\",";
+	json += "\"version\":\"" + FKZ_JsonEscape(g_ServerInfo.version) + "\",";
 	json += "\"tickrate\":" + std::to_string(g_ServerInfo.tickrate) + ",";
 	json += std::string("\"secure\":") + (g_ServerInfo.secure ? "true" : "false") + ",";
-	json += "\"mm_version\":\"" + JsonEscape(g_ServerInfo.mmVersion) + "\",";
+	json += "\"mm_version\":\"" + FKZ_JsonEscape(g_ServerInfo.mmVersion) + "\",";
 	json += std::string("\"cs2kz_loaded\":") + (CS2KZ_IsLoaded() ? "true" : "false") + ",";
 	json += "\"plugins\":" + BuildPluginsJson() + ",";
-	json += "\"ip\":\"" + JsonEscape(ip) + "\",";
+	json += "\"ip\":\"" + FKZ_JsonEscape(ip) + "\",";
 	json += "\"port\":" + std::to_string(port) + ",";
-	json += "\"map\":\"" + JsonEscape(g_ServerInfo.mapName) + "\",";
+	json += "\"map\":\"" + FKZ_JsonEscape(g_ServerInfo.mapName) + "\",";
 	json += "\"players\":" + std::to_string(playerCount) + ",";
 	json += "\"max_players\":" + std::to_string(maxPlayers) + ",";
 	json += "\"bot_count\":" + std::to_string(botCount);
@@ -221,7 +221,7 @@ std::string BuildPayloadJson()
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		const PlayerInfo &player = g_PlayerManager.GetPlayer(i);
-		if (!IsReportedPlayer(i))
+		if (!FKZ_IsReportedPlayer(i))
 		{
 			continue;
 		}
@@ -243,8 +243,8 @@ std::string BuildPayloadJson()
 
 		json += "{";
 		json += "\"steamid\":\"" + std::string(steamIdStr) + "\",";
-		json += "\"name\":\"" + JsonEscape(player.name) + "\",";
-		json += "\"ip\":\"" + JsonEscape(player.ipAddress) + "\",";
+		json += "\"name\":\"" + FKZ_JsonEscape(player.name) + "\",";
+		json += "\"ip\":\"" + FKZ_JsonEscape(player.ipAddress) + "\",";
 
 		char timeBuf[32];
 		snprintf(timeBuf, sizeof(timeBuf), "%.1f", timeOnServer);
@@ -252,7 +252,7 @@ std::string BuildPayloadJson()
 
 		json += std::string("\"in_game\":") + (player.inGame ? "true" : "false") + ",";
 		json += "\"cs2kz\":" + BuildCS2KZJson(i) + ",";
-		json += "\"playtime_modes\":" + BuildPlaytimeModesJson(i);
+		json += "\"playtime_modes\":" + FKZ_BuildPlaytimeModesJson(i);
 		json += "}";
 	}
 
@@ -261,13 +261,13 @@ std::string BuildPayloadJson()
 	return json;
 }
 
-std::string BuildHibernateJson()
+std::string FKZ_BuildHibernateJson()
 {
 	char ip[64];
 	int port;
-	ResolveIpPort(ip, sizeof(ip), port);
+	FKZ_ResolveIpPort(ip, sizeof(ip), port);
 
 	std::string json;
-	json += "{\"ip\":\"" + JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + "}";
+	json += "{\"ip\":\"" + FKZ_JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + "}";
 	return json;
 }

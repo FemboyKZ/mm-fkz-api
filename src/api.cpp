@@ -1,12 +1,12 @@
 /**
  * FKZ API - Public API implementation
  *
- * Exposes the FKZ REST API to other Metamod plugins (see include/IFKZApi.h).
+ * Exposes the FKZ REST API to other Metamod plugins (see interfaces/fkz-api/ifkzapi.h in mm-utils).
  *   - ApiRequest()  generic async request to any endpoint/method.
  *   - Get*()        typed convenience wrappers for the main read endpoints.
  *
  * All requests are asynchronous.
- * The result is delivered to an FKZ_ResponseCallback with the HTTP status and the raw response body.
+ * The result is delivered to an FKZResponseCallback with the HTTP status and the raw response body.
  *
  * Endpoints map to the API root configured as api_url in core.cfg
  * (e.g. https://api.femboykz.com).
@@ -33,7 +33,7 @@ namespace
 	struct ApiCallCtx
 	{
 		PluginId owner;
-		FKZ_ResponseCallback cb;
+		FKZResponseCallback cb;
 		void *data;
 	};
 
@@ -73,7 +73,7 @@ namespace
 	}
 
 	// Builds the absolute URL and dispatches the request.
-	bool Dispatch(PluginId owner, const char *method, const char *path, const char *body, FKZ_ResponseCallback cb, void *data)
+	bool Dispatch(PluginId owner, const char *method, const char *path, const char *body, FKZResponseCallback cb, void *data)
 	{
 		if (!cb)
 		{
@@ -135,7 +135,7 @@ namespace
 	}
 
 	// GET a collection endpoint with pagination.
-	bool GetCollection(PluginId owner, const char *base, FKZ_ResponseCallback cb, int limit, int offset, const char *sort, void *data)
+	bool GetCollection(PluginId owner, const char *base, FKZResponseCallback cb, int limit, int offset, const char *sort, void *data)
 	{
 		return Dispatch(owner, "GET", Paged(base, limit, offset, sort).c_str(), nullptr, cb, data);
 	}
@@ -153,7 +153,7 @@ void FKZApi::DropOwnedBy(PluginId owner)
 }
 
 // Core
-bool FKZApi::ApiRequest(PluginId owner, const char *method, const char *path, const char *body, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::ApiRequest(PluginId owner, const char *method, const char *path, const char *body, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, method, path, body, callback, data);
 }
@@ -168,202 +168,202 @@ int FKZApi::GetApiBase(char *buffer, int maxlength)
 	return (int)g_FKZConfig.apiUrl.size();
 }
 
-bool FKZApi::GetHealth(PluginId owner, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetHealth(PluginId owner, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", "/health", nullptr, callback, data);
 }
 
-bool FKZApi::PostServerStatus(PluginId owner, const char *body, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::PostServerStatus(PluginId owner, const char *body, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "POST", "/servers/status", body, callback, data);
 }
 
-bool FKZApi::PostHibernate(PluginId owner, const char *body, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::PostHibernate(PluginId owner, const char *body, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "POST", "/servers/status/hibernate", body, callback, data);
 }
 
 // Live servers / players / maps
-bool FKZApi::GetServers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetServers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/servers", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetServer(PluginId owner, const char *ip, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetServer(PluginId owner, const char *ip, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/servers/" + Encode(ip)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetPlayers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetPlayers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/players", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetOnlinePlayers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetOnlinePlayers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/players/online", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetPlayer(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetPlayer(PluginId owner, const char *steamid, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/players/" + Encode(steamid)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetMaps(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetMaps(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/maps", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetMap(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetMap(PluginId owner, const char *mapname, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/maps/" + Encode(mapname)).c_str(), nullptr, callback, data);
 }
 
 // KZ Global - records
-bool FKZApi::GetKzRecords(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzRecords(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/records", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzRecentRecords(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzRecentRecords(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/records/recent", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzWorldRecords(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzWorldRecords(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/records/worldrecords", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzLeaderboard(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzLeaderboard(PluginId owner, const char *mapname, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, ("/global/records/leaderboard/" + Encode(mapname)).c_str(), callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzRecord(PluginId owner, int id, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetKzRecord(PluginId owner, int id, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/global/records/" + std::to_string(id)).c_str(), nullptr, callback, data);
 }
 
 // KZ Global - players
-bool FKZApi::GetKzPlayers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzPlayers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/players", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzPlayer(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetKzPlayer(PluginId owner, const char *steamid, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/global/players/" + Encode(steamid)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetKzPlayerRecords(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort,
+bool FKZApi::GetKzPlayerRecords(PluginId owner, const char *steamid, FKZResponseCallback callback, int limit, int offset, const char *sort,
 								void *data)
 {
 	return GetCollection(owner, ("/global/players/" + Encode(steamid) + "/records").c_str(), callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzPlayerPBs(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzPlayerPBs(PluginId owner, const char *steamid, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, ("/global/players/" + Encode(steamid) + "/pbs").c_str(), callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzPlayerCompletions(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort,
+bool FKZApi::GetKzPlayerCompletions(PluginId owner, const char *steamid, FKZResponseCallback callback, int limit, int offset, const char *sort,
 									void *data)
 {
 	return GetCollection(owner, ("/global/players/" + Encode(steamid) + "/completions").c_str(), callback, limit, offset, sort, data);
 }
 
 // KZ Global - maps
-bool FKZApi::GetKzMaps(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzMaps(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/maps", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzMap(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetKzMap(PluginId owner, const char *mapname, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/global/maps/" + Encode(mapname)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetKzMapRecords(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzMapRecords(PluginId owner, const char *mapname, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, ("/global/maps/" + Encode(mapname) + "/records").c_str(), callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzMapCourses(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzMapCourses(PluginId owner, const char *mapname, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, ("/global/maps/" + Encode(mapname) + "/courses").c_str(), callback, limit, offset, sort, data);
 }
 
 // KZ Global - servers
-bool FKZApi::GetKzServers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzServers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/servers", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzServer(PluginId owner, int id, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetKzServer(PluginId owner, int id, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/global/servers/" + std::to_string(id)).c_str(), nullptr, callback, data);
 }
 
 // KZ Global - bans
-bool FKZApi::GetKzBans(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzBans(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/bans", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzActiveBans(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzActiveBans(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/global/bans/active", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetKzBan(PluginId owner, int id, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetKzBan(PluginId owner, int id, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/global/bans/" + std::to_string(id)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetKzPlayerBans(PluginId owner, const char *steamid, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetKzPlayerBans(PluginId owner, const char *steamid, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, ("/global/bans/player/" + Encode(steamid)).c_str(), callback, limit, offset, sort, data);
 }
 
 // KZ Local (CS:GO 128/64 tick)
-bool FKZApi::GetLocalMaps(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalMaps(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/gokz/maps", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetLocalMap(PluginId owner, const char *mapname, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetLocalMap(PluginId owner, const char *mapname, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", ("/local/gokz/maps/" + Encode(mapname)).c_str(), nullptr, callback, data);
 }
 
-bool FKZApi::GetLocalRecords(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalRecords(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/gokz/records", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetLocalPlayers(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalPlayers(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/gokz/players", callback, limit, offset, sort, data);
 }
 
 // KZ Local CS2
-bool FKZApi::GetLocalCS2Maps(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalCS2Maps(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/cs2kz/maps", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetLocalCS2Records(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalCS2Records(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/cs2kz/records", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetLocalCS2Players(PluginId owner, FKZ_ResponseCallback callback, int limit, int offset, const char *sort, void *data)
+bool FKZApi::GetLocalCS2Players(PluginId owner, FKZResponseCallback callback, int limit, int offset, const char *sort, void *data)
 {
 	return GetCollection(owner, "/local/cs2kz/players", callback, limit, offset, sort, data);
 }
 
-bool FKZApi::GetLocalCS2Stats(PluginId owner, FKZ_ResponseCallback callback, void *data)
+bool FKZApi::GetLocalCS2Stats(PluginId owner, FKZResponseCallback callback, void *data)
 {
 	return Dispatch(owner, "GET", "/local/cs2kz/stats", nullptr, callback, data);
 }

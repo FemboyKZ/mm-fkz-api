@@ -14,8 +14,8 @@ struct FKZConfig
 	float interval = 10.0f;
 
 	// Local per-player database (via the sql_mm plugin).
-	bool dbEnabled = false;
-	mmu::config::DatabaseBlock db =
+	bool databaseEnabled = false;
+	mmu::config::DatabaseBlock database =
 		mmu::config::DatabaseBlock::Defaults("", "addons/fkz-api/data/fkz-api.db", "", "addons/fkz-api/data/prefs.sqlite3");
 
 	mmu::config::GeneralBlock general;

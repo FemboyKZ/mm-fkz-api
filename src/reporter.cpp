@@ -64,12 +64,12 @@ static void OnHibernateResponse(bool /*success*/, int statusCode, const char * /
 	}
 }
 
-void SendReport()
+void FKZ_SendReport()
 {
 	// Flush the time elapsed since the last sample into each player's active mode before snapshotting.
 	CS2KZ_SampleAll();
 
-	std::string payload = BuildPayloadJson();
+	std::string payload = FKZ_BuildPayloadJson();
 
 	// The per-mode deltas are in the payload now, held aside until the POST is answered so a failure can give them back.
 	int reportId = CS2KZ_TakePlaytimeDeltas();
@@ -80,14 +80,14 @@ void SendReport()
 	}
 }
 
-void SendHibernate()
+void FKZ_SendHibernate()
 {
 	if (g_FKZConfig.apiUrl.empty())
 	{
 		return;
 	}
 
-	std::string payload = BuildHibernateJson();
+	std::string payload = FKZ_BuildHibernateJson();
 	if (g_FKZApi.PostHibernate(g_PLID, payload.c_str(), OnHibernateResponse, NULL))
 	{
 		MMU_LOG_INFO("Sent hibernate signal (server empty)\n");

@@ -28,7 +28,7 @@ static char g_prefsTable[64];
 #define CREATE_PREFS_SQLITE "CREATE TABLE IF NOT EXISTS %s (steamid INTEGER PRIMARY KEY, crosschat_muted INTEGER NOT NULL DEFAULT 0);"
 #define CREATE_PREFS_MYSQL  "CREATE TABLE IF NOT EXISTS %s (steamid BIGINT UNSIGNED PRIMARY KEY, crosschat_muted TINYINT NOT NULL DEFAULT 0);"
 
-bool Database_IsReady()
+bool FKZ_Database_IsReady()
 {
 	return g_dbReady && g_db.IsConnected();
 }
@@ -61,7 +61,7 @@ static void OnSchemaSettled(ISQLQuery * /*q*/)
 		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
 		if (p.connected && p.inGame && !p.isBot)
 		{
-			CrossChat_LoadPrefs(slot, p.steamId64);
+			FKZ_CrossChat_LoadPrefs(slot, p.steamId64);
 		}
 	}
 }
@@ -77,21 +77,21 @@ static void CreateSchema()
 	g_db.Query("SELECT 1", OnSchemaSettled);
 }
 
-void Database_Init()
+void FKZ_Database_Init()
 {
-	if (!g_FKZConfig.dbEnabled || !g_db.Init(g_FKZConfig.db.DbType()))
+	if (!g_FKZConfig.databaseEnabled || !g_db.Init(g_FKZConfig.database.DbType()))
 	{
 		return;
 	}
 	// The prefix was joined as is before, so an empty one or one ending in an underscore keeps its table.
-	const std::string &prefix = g_FKZConfig.db.prefix;
+	const std::string &prefix = g_FKZConfig.database.prefix;
 	const char *sep = (prefix.empty() || prefix.back() == '_') ? "" : "_";
 	snprintf(g_prefsTable, sizeof(g_prefsTable), "%s%splayer_prefs", prefix.c_str(), sep);
 	g_db.SetSchemaHook(CreateSchema);
-	g_db.Connect(g_FKZConfig.db.ToConnectParams(g_SMAPI->GetBaseDir()), nullptr);
+	g_db.Connect(g_FKZConfig.database.ToConnectParams(g_SMAPI->GetBaseDir()), nullptr);
 }
 
-void Database_RunFrame()
+void FKZ_Database_RunFrame()
 {
 	double now = Plat_FloatTime();
 	g_db.RunFrame(now);
@@ -103,7 +103,7 @@ void Database_RunFrame()
 	}
 }
 
-void Database_Cleanup()
+void FKZ_Database_Cleanup()
 {
 	g_dbReady = false;
 	g_schemaRetryTime = 0.0;

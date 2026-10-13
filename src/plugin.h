@@ -12,7 +12,7 @@
 #include <iserver.h>
 #include <tier1/convar.h>
 
-class MMSPlugin : public ISmmPlugin, public IMetamodListener
+class FKZPlugin : public ISmmPlugin, public IMetamodListener
 {
 public:
 	bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late);
@@ -26,7 +26,7 @@ public:
 	void OnPluginLoad(PluginId id) override;
 	void OnPluginUnload(PluginId id) override;
 
-	MMSPlugin();
+	FKZPlugin();
 
 	// KHook callbacks
 	KHook::Return<void> Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick);
@@ -95,7 +95,7 @@ private:
 	KHook::Virtual<ICvar, void, ConCommandRef, const CCommandContext &, const CCommand &> m_DispatchConCommand;
 };
 
-extern MMSPlugin g_ThisPlugin;
+extern FKZPlugin g_ThisPlugin;
 
 PLUGIN_GLOBALVARS();
 

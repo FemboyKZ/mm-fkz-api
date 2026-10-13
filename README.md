@@ -7,7 +7,7 @@ This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 ## Natives
 
 Other plugins can read the FKZ API through the natives exposed by this plugin.
-Include [`include/IFKZApi.h`](include/IFKZApi.h)
+Include [`ifkzapi.h`](https://github.com/FemboyKZ/mm-utils/blob/master/interfaces/fkz-api/ifkzapi.h), which lives in [mm-utils](https://github.com/FemboyKZ/mm-utils).
 
 ## Commands
 

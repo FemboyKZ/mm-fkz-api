@@ -3,7 +3,7 @@
 
 // Periodic status updater.
 // Posts the live server/player report to /servers/status and signals /servers/status/hibernate when the server empties.
-void SendReport();
-void SendHibernate();
+void FKZ_SendReport();
+void FKZ_SendHibernate();
 
 #endif // _INCLUDE_FKZ_REPORTER_H_

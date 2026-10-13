@@ -46,7 +46,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "database")
 	{
-		known = mmu::config::ApplyOptionalDatabaseKey(cfg->db, cfg->dbEnabled, k, value);
+		known = mmu::config::ApplyOptionalDatabaseKey(cfg->database, cfg->databaseEnabled, k, value);
 	}
 	else
 	{

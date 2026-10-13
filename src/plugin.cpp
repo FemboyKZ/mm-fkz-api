@@ -35,8 +35,8 @@ class GameSessionConfiguration_t
 {
 };
 
-MMSPlugin g_ThisPlugin;
-PLUGIN_EXPOSE(MMSPlugin, g_ThisPlugin);
+FKZPlugin g_ThisPlugin;
+PLUGIN_EXPOSE(FKZPlugin, g_ThisPlugin);
 
 // Players already on the server at a late load never pass through the connect hooks,
 // and without them the server reports as empty and cross-chat skips them.
@@ -60,14 +60,14 @@ static void AddExistingPlayers()
 	}
 }
 
-MMSPlugin::MMSPlugin()
-	: m_GameFrame(&ISource2Server::GameFrame, this, nullptr, &MMSPlugin::Hook_GameFrame),
-	  m_ServerHibernationUpdate(&ISource2Server::ServerHibernationUpdate, this, nullptr, &MMSPlugin::Hook_ServerHibernationUpdate),
-	  m_ClientPutInServer(&ISource2GameClients::ClientPutInServer, this, nullptr, &MMSPlugin::Hook_ClientPutInServer),
-	  m_ClientDisconnect(&ISource2GameClients::ClientDisconnect, this, nullptr, &MMSPlugin::Hook_ClientDisconnect),
-	  m_OnClientConnected(&ISource2GameClients::OnClientConnected, this, nullptr, &MMSPlugin::Hook_OnClientConnected),
-	  m_StartupServer(&INetworkServerService::StartupServer, this, nullptr, &MMSPlugin::Hook_StartupServer),
-	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &MMSPlugin::Hook_DispatchConCommand, nullptr)
+FKZPlugin::FKZPlugin()
+	: m_GameFrame(&ISource2Server::GameFrame, this, nullptr, &FKZPlugin::Hook_GameFrame),
+	  m_ServerHibernationUpdate(&ISource2Server::ServerHibernationUpdate, this, nullptr, &FKZPlugin::Hook_ServerHibernationUpdate),
+	  m_ClientPutInServer(&ISource2GameClients::ClientPutInServer, this, nullptr, &FKZPlugin::Hook_ClientPutInServer),
+	  m_ClientDisconnect(&ISource2GameClients::ClientDisconnect, this, nullptr, &FKZPlugin::Hook_ClientDisconnect),
+	  m_OnClientConnected(&ISource2GameClients::OnClientConnected, this, nullptr, &FKZPlugin::Hook_OnClientConnected),
+	  m_StartupServer(&INetworkServerService::StartupServer, this, nullptr, &FKZPlugin::Hook_StartupServer),
+	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &FKZPlugin::Hook_DispatchConCommand, nullptr)
 {
 }
 
@@ -84,13 +84,13 @@ static void FKZ_ReloadConfig()
 	}
 }
 
-bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
+bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
 	PLUGIN_SAVEVARS();
 
 	mmu::log::Init("FKZ", PLUGIN_NAME);
 
-	// ismm->MetaFactory(FKZ_API_INTERFACE) -> our OnMetamodQuery().
+	// ismm->MetaFactory(FKZAPI_INTERFACE) -> our OnMetamodQuery().
 	ismm->AddListener(this, this);
 
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2Server, ISource2Server, INTERFACEVERSION_SERVERGAMEDLL);
@@ -142,7 +142,7 @@ bool MMSPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	return true;
 }
 
-bool MMSPlugin::Unload(char *error, size_t maxlen)
+bool FKZPlugin::Unload(char *error, size_t maxlen)
 {
 	m_GameFrame.Remove(g_pSource2Server);
 	m_ServerHibernationUpdate.Remove(g_pSource2Server);
@@ -153,34 +153,34 @@ bool MMSPlugin::Unload(char *error, size_t maxlen)
 	m_DispatchConCommand.Remove(g_pCVar);
 
 	g_HttpClient.ReleasePending();
-	Database_Cleanup();
+	FKZ_Database_Cleanup();
 
 	mmu::log::Shutdown();
 
 	return true;
 }
 
-void MMSPlugin::AllPluginsLoaded()
+void FKZPlugin::AllPluginsLoaded()
 {
 	g_HttpClient.Init();
-	Database_Init();
+	FKZ_Database_Init();
 	CS2KZ_Refresh();
 }
 
-void MMSPlugin::OnPluginLoad(PluginId /*id*/)
+void FKZPlugin::OnPluginLoad(PluginId /*id*/)
 {
 	CS2KZ_Refresh();
 }
 
-void MMSPlugin::OnPluginUnload(PluginId id)
+void FKZPlugin::OnPluginUnload(PluginId id)
 {
 	CS2KZ_Refresh();
 	g_FKZApi.DropOwnedBy(id);
 }
 
-void *MMSPlugin::OnMetamodQuery(const char *iface, int *ret)
+void *FKZPlugin::OnMetamodQuery(const char *iface, int *ret)
 {
-	if (iface && strcmp(iface, FKZ_API_INTERFACE) == 0)
+	if (iface && strcmp(iface, FKZAPI_INTERFACE) == 0)
 	{
 		if (ret)
 		{
@@ -203,12 +203,12 @@ CON_COMMAND_F(mm_fkz_reload, "Reload fkz-api core.cfg.", FCVAR_GAMEDLL | FCVAR_R
 
 CON_COMMAND_F(mm_fkz_version, "Print the plugin version.", FCVAR_GAMEDLL | FCVAR_RELEASE)
 {
-	MMU_LOG_INFO("Plugin version %s, interface %s.\n", PLUGIN_FULL_VERSION, FKZ_API_INTERFACE);
+	MMU_LOG_INFO("Plugin version %s, interface %s.\n", PLUGIN_FULL_VERSION, FKZAPI_INTERFACE);
 }
 
 // Hooks
 
-KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,
+KHook::Return<void> FKZPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,
 												  const char *)
 {
 	g_pGlobals = g_SMAPI->GetCGlobals();
@@ -226,14 +226,14 @@ KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_OnClientConnected(ISource2GameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid,
+KHook::Return<void> FKZPlugin::Hook_OnClientConnected(ISource2GameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid,
 													  const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
 {
 	g_PlayerManager.OnClientConnected(slot.Get(), pszName, xuid, pszAddress, bFakePlayer);
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+KHook::Return<void> FKZPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
 	g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
 	CS2KZ_ResetPlayer(slot.Get());
@@ -241,7 +241,7 @@ KHook::Return<void> MMSPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPl
 	// Load saved cross-chat state once the player has a real steamID.
 	if (type != 1)
 	{
-		CrossChat_LoadPrefs(slot.Get(), xuid);
+		FKZ_CrossChat_LoadPrefs(slot.Get(), xuid);
 	}
 
 	if (type != 1 && !g_FKZConfig.apiUrl.empty() && g_PlayerManager.GetHumanPlayerCount() == 1)
@@ -252,7 +252,7 @@ KHook::Return<void> MMSPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPl
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
+KHook::Return<void> FKZPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
 													 uint64 xuid, const char *pszNetworkID)
 {
 	int s = slot.Get();
@@ -265,25 +265,25 @@ KHook::Return<void> MMSPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPla
 		CS2KZ_SampleAll();
 		if (CS2KZ_HasPendingPlaytime(s))
 		{
-			SendReport();
+			FKZ_SendReport();
 			m_lastReportTime = Plat_FloatTime();
 		}
 	}
 
 	g_PlayerManager.OnClientDisconnect(s);
-	CrossChat_OnClientDisconnect(s);
+	FKZ_CrossChat_OnClientDisconnect(s);
 	CS2KZ_ResetPlayer(s);
 
 	// Send hibernate signal when last human player leaves
 	if (wasInGame && g_PlayerManager.GetHumanPlayerCount() == 0 && !g_FKZConfig.apiUrl.empty() && !m_hibernateSent)
 	{
 		m_hibernateSent = true;
-		SendHibernate();
+		FKZ_SendHibernate();
 	}
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bool bHibernating)
+KHook::Return<void> FKZPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bool bHibernating)
 {
 	if (!bHibernating)
 	{
@@ -293,14 +293,14 @@ KHook::Return<void> MMSPlugin::Hook_ServerHibernationUpdate(ISource2Server *, bo
 	else if (!m_hibernateSent && !g_FKZConfig.apiUrl.empty())
 	{
 		m_hibernateSent = true;
-		SendHibernate();
+		FKZ_SendHibernate();
 	}
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick)
+KHook::Return<void> FKZPlugin::Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick)
 {
-	Database_RunFrame();
+	FKZ_Database_RunFrame();
 
 	if (!m_serverActive)
 	{
@@ -324,7 +324,7 @@ KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating,
 	int humans = g_PlayerManager.GetHumanPlayerCount();
 
 	// Keep the cross-chat long-poll open while players are present.
-	CrossChat_Tick(humans > 0);
+	FKZ_CrossChat_Tick(humans > 0);
 
 	// Poll each player's cs2kz mode so the per-mode playtime follows mode switches between reports.
 	CS2KZ_Tick();
@@ -339,12 +339,12 @@ KHook::Return<void> MMSPlugin::Hook_GameFrame(ISource2Server *, bool simulating,
 	if (now - m_lastReportTime >= g_FKZConfig.interval)
 	{
 		m_lastReportTime = now;
-		SendReport();
+		FKZ_SendReport();
 	}
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> MMSPlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+KHook::Return<void> FKZPlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	return {CrossChat_OnDispatchConCommand(cmd, ctx, args) ? KHook::Action::Supersede : KHook::Action::Ignore};
+	return {FKZ_CrossChat_OnDispatchConCommand(cmd, ctx, args) ? KHook::Action::Supersede : KHook::Action::Ignore};
 }

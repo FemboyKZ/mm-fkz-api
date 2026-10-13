@@ -38,6 +38,6 @@ std::string BuildCS2KZJson(int slot);
 // Per-player per-mode playtime deltas (seconds since the last report).
 // Keys: cs2kz_vnl = Vanilla, cs2kz_ckz = Classic.
 // A mode with no time accrued is sent as null so the key stays visible without clobbering what the API already accrued.
-std::string BuildPlaytimeModesJson(int slot);
+std::string FKZ_BuildPlaytimeModesJson(int slot);
 
 #endif // _INCLUDE_FKZ_CS2KZ_H_

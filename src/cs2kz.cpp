@@ -167,7 +167,7 @@ int CS2KZ_TakePlaytimeDeltas()
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		// A player the report left out keeps theirs for the one that lists them.
-		if (!IsReportedPlayer(i))
+		if (!FKZ_IsReportedPlayer(i))
 		{
 			continue;
 		}
@@ -232,8 +232,8 @@ std::string BuildCS2KZJson(int slot)
 
 	char buf[32];
 	std::string json = "{";
-	json += "\"mode\":\"" + JsonEscape(status.modeName) + "\",";
-	json += "\"mode_short\":\"" + JsonEscape(status.modeShortName) + "\",";
+	json += "\"mode\":\"" + FKZ_JsonEscape(status.modeName) + "\",";
+	json += "\"mode_short\":\"" + FKZ_JsonEscape(status.modeShortName) + "\",";
 	json += std::string("\"timer_running\":") + (status.running ? "true" : "false") + ",";
 	json += std::string("\"paused\":") + (status.paused ? "true" : "false") + ",";
 	json += std::string("\"valid\":") + (status.valid ? "true" : "false") + ",";
@@ -241,13 +241,13 @@ std::string BuildCS2KZJson(int slot)
 	snprintf(buf, sizeof(buf), "%.3f", status.time);
 	json += "\"time\":" + std::string(buf) + ",";
 
-	json += "\"course\":" + (status.onCourse ? "\"" + JsonEscape(status.course.name) + "\"" : std::string("null")) + ",";
+	json += "\"course\":" + (status.onCourse ? "\"" + FKZ_JsonEscape(status.course.name) + "\"" : std::string("null")) + ",";
 	json += "\"teleports\":" + std::to_string(status.teleportsUsed);
 	json += "}";
 	return json;
 }
 
-std::string BuildPlaytimeModesJson(int slot)
+std::string FKZ_BuildPlaytimeModesJson(int slot)
 {
 	std::string json = "{";
 

@@ -129,14 +129,6 @@ for task in MMSPlugin.binaries:
         os.path.join(cfg_path, "core.cfg"),
     )
 
-    # Bundle the public interface header so other Metamod plugins can build against it.
-    inc_path = os.path.join("addons", MMSPlugin.metadata["name"], "include")
-    builder.AddFolder(inc_path)
-    builder.AddCopy(
-        os.path.join(builder.sourcePath, "include", "IFKZApi.h"),
-        os.path.join(inc_path, "IFKZApi.h"),
-    )
-
     if task.debug:
         pdb_list.append(task.debug)
 

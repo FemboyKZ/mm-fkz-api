@@ -83,9 +83,12 @@ void Database_Init()
 	{
 		return;
 	}
-	snprintf(g_prefsTable, sizeof(g_prefsTable), "%splayer_prefs", g_Config.db.prefix.c_str());
+	// The prefix was joined as is before, so an empty one or one ending in an underscore keeps its table.
+	const std::string &prefix = g_Config.db.prefix;
+	const char *sep = (prefix.empty() || prefix.back() == '_') ? "" : "_";
+	snprintf(g_prefsTable, sizeof(g_prefsTable), "%s%splayer_prefs", prefix.c_str(), sep);
 	g_db.SetSchemaHook(CreateSchema);
-	g_db.Connect(g_Config.db.ToConnectParams(), nullptr);
+	g_db.Connect(g_Config.db.ToConnectParams(g_SMAPI->GetBaseDir()), nullptr);
 }
 
 void Database_RunFrame()

@@ -15,7 +15,8 @@ struct PluginConfig
 
 	// Local per-player database (via the sql_mm plugin).
 	bool dbEnabled = false;
-	mmu::config::DatabaseBlock db = mmu::config::DatabaseBlock::Defaults("", "addons/fkz-api/data/prefs.sqlite3", "");
+	mmu::config::DatabaseBlock db =
+		mmu::config::DatabaseBlock::Defaults("", "addons/fkz-api/data/fkz-api.db", "", "addons/fkz-api/data/prefs.sqlite3");
 
 	mmu::config::GeneralBlock general;
 

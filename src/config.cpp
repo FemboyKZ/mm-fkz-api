@@ -16,7 +16,8 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	std::string sec = str::ToLower(section);
 	std::string k = str::ToLower(key);
 
-	if (sec == "config")
+	// "config" is the old name.
+	if (sec == "general" || sec == "config")
 	{
 		if (k == "apiurl")
 		{
@@ -38,29 +39,14 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->interval = static_cast<float>(atof(value.c_str()));
 		}
-		else if (k == "commandprefix")
-		{
-			cfg->commandPrefix = value;
-		}
-		else if (k == "silentcommandprefix")
-		{
-			cfg->silentCommandPrefix = value;
-		}
-		else
+		else if (!mmu::config::ApplyGeneralKey(cfg->general, k, value))
 		{
 			mmu::config::ApplyLogKey(cfg->log, k, value);
 		}
 	}
 	else if (sec == "database")
 	{
-		if (k == "enabled")
-		{
-			cfg->dbEnabled = (value != "0");
-		}
-		else
-		{
-			mmu::config::ApplyDatabaseKey(cfg->db, k, value);
-		}
+		mmu::config::ApplyOptionalDatabaseKey(cfg->db, cfg->dbEnabled, k, value);
 	}
 }
 

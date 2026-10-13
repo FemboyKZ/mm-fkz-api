@@ -17,9 +17,7 @@ struct PluginConfig
 	bool dbEnabled = false;
 	mmu::config::DatabaseBlock db = mmu::config::DatabaseBlock::Defaults("", "addons/fkz-api/data/prefs.sqlite3", "");
 
-	// Each character is an accepted prefix.
-	std::string commandPrefix = "!";       // normal (message stays visible)
-	std::string silentCommandPrefix = "/"; // silent (message suppressed)
+	mmu::config::GeneralBlock general;
 
 	mmu::config::LogBlock log;
 

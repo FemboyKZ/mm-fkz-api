@@ -152,7 +152,7 @@ static void NotifyMuteState(int slot, bool muted)
 	filter.AddRecipient(slot);
 	if (muted)
 	{
-		char prefix = g_Config.commandPrefix[0] ? g_Config.commandPrefix[0] : g_Config.silentCommandPrefix[0];
+		char prefix = g_Config.general.commandPrefix[0] ? g_Config.general.commandPrefix[0] : g_Config.general.silentCommandPrefix[0];
 		char line[128];
 		snprintf(line, sizeof(line), " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages hidden. Type %ccrosschat to show.", prefix);
 		SendChatLine(filter, line);
@@ -296,8 +296,8 @@ bool CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ct
 		return false;
 	}
 
-	bool silent = g_Config.silentCommandPrefix.find(text[0]) != std::string::npos;
-	bool isCommand = silent || g_Config.commandPrefix.find(text[0]) != std::string::npos;
+	bool silent = g_Config.general.silentCommandPrefix.find(text[0]) != std::string::npos;
+	bool isCommand = silent || g_Config.general.commandPrefix.find(text[0]) != std::string::npos;
 
 	// Mute toggle.
 	std::string command = text.substr(1, text.find_first_of(" \t", 1) - 1);

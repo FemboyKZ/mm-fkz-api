@@ -188,6 +188,11 @@ CON_COMMAND_F(mm_fkz_reload, "Reload fkz-api core.cfg.", FCVAR_GAMEDLL | FCVAR_R
 	g_Config.Load();
 }
 
+CON_COMMAND_F(mm_fkz_version, "Print the plugin version.", FCVAR_GAMEDLL | FCVAR_RELEASE)
+{
+	MMU_LOG_INFO("Plugin version %s, interface %s.\n", PLUGIN_FULL_VERSION, FKZ_API_INTERFACE);
+}
+
 // Hooks
 
 KHook::Return<void> MMSPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,

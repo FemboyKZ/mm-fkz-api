@@ -9,6 +9,15 @@ This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 Other plugins can read the FKZ API through the natives exposed by this plugin.
 Include [`include/IFKZApi.h`](include/IFKZApi.h)
 
+## Commands
+
+Server console only.
+
+| Command          | Description                            |
+| ---------------- | -------------------------------------- |
+| `mm_fkz_reload`  | Reload `core.cfg` without a map change |
+| `mm_fkz_version` | Print the plugin version               |
+
 ## Build
 
 ### AMBuild

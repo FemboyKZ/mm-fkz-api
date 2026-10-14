@@ -2,7 +2,7 @@
 #define _INCLUDE_FKZ_PLAYER_MANAGER_H_
 
 #include <cstdint>
-#include "globals.h"
+#include "common.h"
 
 struct PlayerInfo
 {

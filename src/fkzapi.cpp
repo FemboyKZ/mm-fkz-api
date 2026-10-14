@@ -5,19 +5,21 @@
  * Reports server/player data to API via periodic POST.
  */
 
-#include "plugin.h"
-#include "api.h"
+#include "fkzapi.h"
+#include "api/api.h"
 #include "config/config.h"
-#include "cross_chat.h"
-#include "cs2kz.h"
-#include "database.h"
-#include "globals.h"
-#include "http_client.h"
-#include "json_builder.h"
-#include "player_manager.h"
-#include "reporter.h"
-#include "server_info.h"
+#include "chat/cross_chat.h"
+#include "kz/cs2kz.h"
+#include "lang/translations.h"
+#include "db/database.h"
+#include "common.h"
+#include "http/http_client.h"
+#include "report/json_builder.h"
+#include "player/player_manager.h"
+#include "report/reporter.h"
+#include "report/server_info.h"
 
+#include "game/cvarquery.h"
 #include "utils/log.h"
 
 #include <ISmmAPI.h>
@@ -34,6 +36,12 @@
 class GameSessionConfiguration_t
 {
 };
+
+// The other interfaces in common.h come with the SDK's interfaces lib.
+CGlobalVars *g_pGlobals = nullptr;
+IGameEventSystem *g_pGameEventSystem = nullptr;
+// For mmu::cvarquery.
+IVEngineServer *g_pEngine = nullptr;
 
 FKZPlugin g_ThisPlugin;
 PLUGIN_EXPOSE(FKZPlugin, g_ThisPlugin);
@@ -56,6 +64,7 @@ static void AddExistingPlayers()
 		const char *name = g_pCS2KZ ? g_pCS2KZ->GetPlayerName(slot) : "";
 		g_PlayerManager.OnClientConnected(slot, name, xuid, netInfo->GetAddress(), false);
 		g_PlayerManager.OnClientPutInServer(slot, name, 0, xuid);
+		mmu::cvarquery::OnClientConnected(slot, false);
 		CS2KZ_ResetPlayer(slot);
 	}
 }
@@ -82,6 +91,9 @@ static void FKZ_ReloadConfig()
 					 "the key \"value\" lines of older versions are not read.\n",
 					 path.c_str());
 	}
+
+	g_FKZTranslations.Load(g_SMAPI->GetBaseDir(), PLUGIN_NAME);
+	g_FKZTranslations.SetDefaultLanguage(g_FKZConfig.general.defaultLanguage);
 }
 
 bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
@@ -97,8 +109,12 @@ bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2Server, ISource2Server, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_CURRENT(GetServerFactory, g_pSource2GameClients, ISource2GameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngineServer, IVEngineServer2, INTERFACEVERSION_VENGINESERVER);
+	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pCVar, ICvar, CVAR_INTERFACE_VERSION);
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
+
+	// Non fatal, translations fall back to the default language.
+	mmu::cvarquery::Init(g_pEngine);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
@@ -154,6 +170,7 @@ bool FKZPlugin::Unload(char *error, size_t maxlen)
 	m_StartupServer.Remove(g_pNetworkServerService);
 	m_DispatchConCommand.Remove(g_pCVar);
 
+	mmu::cvarquery::Shutdown();
 	g_HttpClient.ReleasePending();
 	FKZ_Database_Cleanup();
 
@@ -242,6 +259,7 @@ KHook::Return<void> FKZPlugin::Hook_OnClientConnected(ISource2GameClients *, CPl
 													  const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
 {
 	g_PlayerManager.OnClientConnected(slot.Get(), pszName, xuid, pszAddress, bFakePlayer);
+	mmu::cvarquery::OnClientConnected(slot.Get(), bFakePlayer);
 	return {KHook::Action::Ignore};
 }
 
@@ -283,6 +301,7 @@ KHook::Return<void> FKZPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPla
 	}
 
 	g_PlayerManager.OnClientDisconnect(s);
+	mmu::cvarquery::OnClientDisconnect(s);
 	FKZ_CrossChat_OnClientDisconnect(s);
 	CS2KZ_ResetPlayer(s);
 

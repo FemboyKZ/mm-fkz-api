@@ -1,8 +1,8 @@
 #include <cstring>
 
-#include "server_info.h"
-#include "globals.h"
-#include "plugin.h"
+#include "report/server_info.h"
+#include "common.h"
+#include "fkzapi.h"
 #include "utils/log.h"
 #include <tier1/convar.h>
 #include <steam/steam_gameserver.h>

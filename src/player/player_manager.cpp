@@ -1,6 +1,6 @@
 #include <cstring>
 
-#include "player_manager.h"
+#include "player/player_manager.h"
 #include <tier0/platform.h>
 
 PlayerManager g_PlayerManager;

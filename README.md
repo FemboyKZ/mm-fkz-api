@@ -9,14 +9,11 @@ This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 Other plugins can read the FKZ API through the natives exposed by this plugin.
 Include [`ifkzapi.h`](https://github.com/FemboyKZ/mm-utils/blob/master/interfaces/fkz-api/ifkzapi.h), which lives in [mm-utils](https://github.com/FemboyKZ/mm-utils).
 
-## Commands
+## Usage
 
-Server console only.
+[`/cfg/fkz-api/core.cfg`](configs/core.cfg) is read on every map change and by `mm_fkz_reload`.
 
-| Command          | Description                            |
-| ---------------- | -------------------------------------- |
-| `mm_fkz_reload`  | Reload `core.cfg` without a map change |
-| `mm_fkz_version` | Print the plugin version               |
+See [COMMANDS](./COMMANDS.md)
 
 ## Build
 

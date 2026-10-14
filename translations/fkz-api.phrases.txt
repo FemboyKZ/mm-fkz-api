@@ -1,0 +1,21 @@
+// Cross-chat phrases. Section name is the phrase key used in code.
+// To add a language, copy the "en" line and change the key, keeping the SAME format specifiers in the SAME order.
+
+"Phrases"
+{
+	// !crosschat
+	"Cross-server messages hidden. Type %ccrosschat to show."
+	{
+		"en"	"Cross-server messages hidden. Type %ccrosschat to show."
+	}
+	"Cross-server messages shown."
+	{
+		"en"	"Cross-server messages shown."
+	}
+
+	// After the name of a sender who has cross-chat hidden
+	"(muted)"
+	{
+		"en"	"(muted)"
+	}
+}

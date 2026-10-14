@@ -10,11 +10,11 @@
 #include <cstring>
 #include <vector>
 
-#include "cs2kz.h"
-#include "globals.h"
-#include "json_builder.h"
-#include "player_manager.h"
-#include "plugin.h"
+#include "kz/cs2kz.h"
+#include "common.h"
+#include "report/json_builder.h"
+#include "player/player_manager.h"
+#include "fkzapi.h"
 #include "utils/log.h"
 #include <ISmmAPI.h>
 #include "interfaces/cs2kz/ics2kz.h"

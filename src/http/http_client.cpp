@@ -4,8 +4,8 @@
 #include <string>
 
 #include "config/config.h"
-#include "http_client.h"
-#include "plugin.h"
+#include "http/http_client.h"
+#include "fkzapi.h"
 
 #include "utils/log.h"
 

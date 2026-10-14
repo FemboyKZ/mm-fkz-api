@@ -9,31 +9,39 @@ for sdk_target in MMSPlugin.sdk_targets:
         builder, cxx, f'{MMSPlugin.metadata["name"]}.{sdk["name"]}', sdk
     )
 
-    binary.sources += [
-        "src/plugin.cpp",
-        "src/globals.cpp",
-        "src/config/config.cpp",
-        "src/player_manager.cpp",
-        "src/server_info.cpp",
-        "src/http_client.cpp",
-        "src/json_builder.cpp",
-        "src/reporter.cpp",
-        "src/cross_chat.cpp",
-        "src/database.cpp",
-        "src/api.cpp",
-        "src/cs2kz.cpp",
-        "mm-utils/utils/log.cpp",
-        "mm-utils/utils/sql.cpp",
+    binary.compiler.cxxincludes += [
+        os.path.join(builder.sourcePath, "src"),
     ]
 
-    # SayText2 (cross-chat) lives in usermessages.proto, which imports
-    # networkbasetypes.proto -> network_connection.proto.
+    binary.sources += [
+        "src/fkzapi.cpp",
+        "src/api/api.cpp",
+        "src/chat/cross_chat.cpp",
+        "src/config/config.cpp",
+        "src/db/database.cpp",
+        "src/http/http_client.cpp",
+        "src/kz/cs2kz.cpp",
+        "src/lang/translations.cpp",
+        "src/player/player_manager.cpp",
+        "src/report/json_builder.cpp",
+        "src/report/reporter.cpp",
+        "src/report/server_info.cpp",
+        "mm-utils/utils/chat_colors.cpp",
+        "mm-utils/game/cvarquery.cpp",
+        "mm-utils/utils/log.cpp",
+        "mm-utils/sdk/sigscan.cpp",
+        "mm-utils/utils/sql.cpp",
+        "mm-utils/utils/translations.cpp",
+    ]
+
     protoc_builder = builder.tools.Protoc(
         protoc=sdk_target.protoc,
         sources=[
             os.path.join(sdk["path"], "common", "valveextensions.proto"),
             os.path.join(sdk["path"], "common", "network_connection.proto"),
             os.path.join(sdk["path"], "common", "networkbasetypes.proto"),
+            os.path.join(sdk["path"], "common", "source2_steam_stats.proto"),
+            os.path.join(sdk["path"], "common", "netmessages.proto"),
             os.path.join(sdk["path"], "game", "shared", "usermessages.proto"),
         ],
     )

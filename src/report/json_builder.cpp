@@ -2,12 +2,12 @@
 #include <cstring>
 
 #include "config/config.h"
-#include "cs2kz.h"
-#include "globals.h"
-#include "json_builder.h"
-#include "player_manager.h"
-#include "plugin.h"
-#include "server_info.h"
+#include "kz/cs2kz.h"
+#include "common.h"
+#include "report/json_builder.h"
+#include "player/player_manager.h"
+#include "fkzapi.h"
+#include "report/server_info.h"
 #include <ISmmAPI.h>
 #include <tier0/platform.h>
 #include <tier1/convar.h>

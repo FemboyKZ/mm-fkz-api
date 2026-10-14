@@ -8,11 +8,6 @@
 class FKZApi : public IFKZApi
 {
 public:
-	int GetInterfaceVersion() override
-	{
-		return 2;
-	}
-
 	// A plugin Metamod has unloaded: its callbacks are code that is gone.
 	void DropOwnedBy(PluginId owner);
 

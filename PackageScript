@@ -121,6 +121,9 @@ for task in MMSPlugin.binaries:
 
     packages[sdk_name].addBinary(task.binary)
 
+    # Deploy translation files
+    packages[sdk_name].addFolder("translations", "translations")
+
     # Include default config file in cfg/fkz-api/
     cfg_path = os.path.join("cfg", MMSPlugin.metadata["name"])
     builder.AddFolder(cfg_path)

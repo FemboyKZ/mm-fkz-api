@@ -13,13 +13,14 @@
 #include <vector>
 
 #include "config/config.h"
-#include "cross_chat.h"
-#include "database.h"
-#include "globals.h"
-#include "http_client.h"
-#include "json_builder.h"
-#include "player_manager.h"
-#include "plugin.h"
+#include "chat/cross_chat.h"
+#include "db/database.h"
+#include "common.h"
+#include "http/http_client.h"
+#include "lang/translations.h"
+#include "report/json_builder.h"
+#include "player/player_manager.h"
+#include "fkzapi.h"
 
 #include "utils/log.h"
 
@@ -120,8 +121,7 @@ static void PrintCrossChat(const char *rawAlias, const char *rawName, const char
 	const char *name = nameText.c_str();
 	const char *message = messageText.c_str();
 
-	CRecipientFilter filter;
-	filter.MakeReliable();
+	// One line per player, the tag is in their language.
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
@@ -135,14 +135,16 @@ static void PrintCrossChat(const char *rawAlias, const char *rawName, const char
 		{
 			continue;
 		}
+		CRecipientFilter filter;
+		filter.MakeReliable();
 		filter.AddRecipient(slot);
-	}
 
-	// A muted sender has cross-chat hidden, so tag their name to warn everyone else that replies won't reach them.
-	const char *tag = muted ? CHAT_RED " (muted)" CHAT_DEFAULT : "";
-	char line[768]; // fits [alias<=64] name<=64: message<=512 + control bytes
-	snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s%s: %s", alias, name, tag, message);
-	SendChatLine(filter, line);
+		// A muted sender has cross-chat hidden, so tag their name to warn everyone else that replies won't reach them.
+		const std::string tag = muted ? " " CHAT_RED + FKZ_Translate(slot, "(muted)") + CHAT_DEFAULT : "";
+		char line[768]; // fits [alias<=64] name<=64: message<=512 + control bytes
+		snprintf(line, sizeof(line), " " CHAT_ORCHID "[%s]" CHAT_DEFAULT " %s%s: %s", alias, name, tag.c_str(), message);
+		SendChatLine(filter, line);
+	}
 }
 
 static void NotifyMuteState(int slot, bool muted)
@@ -150,17 +152,19 @@ static void NotifyMuteState(int slot, bool muted)
 	CRecipientFilter filter;
 	filter.MakeReliable();
 	filter.AddRecipient(slot);
+	char text[192];
 	if (muted)
 	{
 		char prefix = g_FKZConfig.general.commandPrefix[0] ? g_FKZConfig.general.commandPrefix[0] : g_FKZConfig.general.silentCommandPrefix[0];
-		char line[128];
-		snprintf(line, sizeof(line), " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages hidden. Type %ccrosschat to show.", prefix);
-		SendChatLine(filter, line);
+		snprintf(text, sizeof(text), FKZ_Translate(slot, "Cross-server messages hidden. Type %ccrosschat to show.").c_str(), prefix);
 	}
 	else
 	{
-		SendChatLine(filter, " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " Cross-server messages shown.");
+		snprintf(text, sizeof(text), "%s", FKZ_Translate(slot, "Cross-server messages shown.").c_str());
 	}
+	char line[256];
+	snprintf(line, sizeof(line), " " CHAT_ORCHID "[CrossChat]" CHAT_DEFAULT " %s", text);
+	SendChatLine(filter, line);
 }
 
 // Persist the current mute state for the player in this slot.

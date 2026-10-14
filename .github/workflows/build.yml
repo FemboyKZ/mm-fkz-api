@@ -65,13 +65,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mm-fkz-api-${{ matrix.runtime }}
+          name: fkz-api-${{ matrix.runtime }}
           path: staging
 
       - name: Upload symbols
         uses: actions/upload-artifact@v7
         with:
-          name: mm-fkz-api-${{ matrix.runtime }}-symbols
+          name: fkz-api-${{ matrix.runtime }}-symbols
           path: build/fkz-api.cs2/linux-x86_64/*.dbg
 
   build-windows:
@@ -131,13 +131,13 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: mm-fkz-api-windows
+          name: fkz-api-windows
           path: staging
 
       - name: Upload symbols
         uses: actions/upload-artifact@v7
         with:
-          name: mm-fkz-api-windows-symbols
+          name: fkz-api-windows-symbols
           path: |
             build/fkz-api.cs2/windows-x86_64/*.pdb
             build/fkz-api.cs2/windows-x86_64/*.map
@@ -154,40 +154,40 @@ jobs:
       - name: Download SteamRT3 artifact
         uses: actions/download-artifact@v8
         with:
-          name: mm-fkz-api-steamrt3
-          path: mm-fkz-api-steamrt3
+          name: fkz-api-steamrt3
+          path: fkz-api-steamrt3
 
       - name: Download SteamRT4 artifact
         uses: actions/download-artifact@v8
         with:
-          name: mm-fkz-api-steamrt4
-          path: mm-fkz-api-steamrt4
+          name: fkz-api-steamrt4
+          path: fkz-api-steamrt4
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v8
         with:
-          name: mm-fkz-api-windows
-          path: mm-fkz-api-windows
+          name: fkz-api-windows
+          path: fkz-api-windows
 
       - name: Download symbol artifacts
         uses: actions/download-artifact@v8
         with:
-          pattern: mm-fkz-api-*-symbols
+          pattern: fkz-api-*-symbols
           path: symbols
 
       - name: Create archives
         run: |
-          cd mm-fkz-api-steamrt3 && zip -r ../mm-fkz-api-${{ github.ref_name }}-steamrt3.zip . && cd ..
-          cd mm-fkz-api-steamrt4 && zip -r ../mm-fkz-api-${{ github.ref_name }}-steamrt4.zip . && cd ..
-          cd mm-fkz-api-windows && zip -r ../mm-fkz-api-${{ github.ref_name }}-windows.zip . && cd ..
-          cd symbols && zip -r ../mm-fkz-api-${{ github.ref_name }}-symbols.zip . && cd ..
+          cd fkz-api-steamrt3 && zip -r ../fkz-api-${{ github.ref_name }}-steamrt3.zip . && cd ..
+          cd fkz-api-steamrt4 && zip -r ../fkz-api-${{ github.ref_name }}-steamrt4.zip . && cd ..
+          cd fkz-api-windows && zip -r ../fkz-api-${{ github.ref_name }}-windows.zip . && cd ..
+          cd symbols && zip -r ../fkz-api-${{ github.ref_name }}-symbols.zip . && cd ..
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            mm-fkz-api-${{ github.ref_name }}-steamrt3.zip
-            mm-fkz-api-${{ github.ref_name }}-steamrt4.zip
-            mm-fkz-api-${{ github.ref_name }}-windows.zip
-            mm-fkz-api-${{ github.ref_name }}-symbols.zip
+            fkz-api-${{ github.ref_name }}-steamrt3.zip
+            fkz-api-${{ github.ref_name }}-steamrt4.zip
+            fkz-api-${{ github.ref_name }}-windows.zip
+            fkz-api-${{ github.ref_name }}-symbols.zip
           generate_release_notes: true

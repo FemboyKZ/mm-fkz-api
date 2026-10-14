@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_FKZ_GLOBALS_H_
-#define _INCLUDE_FKZ_GLOBALS_H_
+#ifndef _INCLUDE_FKZ_COMMON_H_
+#define _INCLUDE_FKZ_COMMON_H_
 
 #include <ISmmPlugin.h>
 #include <eiface.h>
@@ -18,4 +18,4 @@ extern CGlobalVars *g_pGlobals;
 extern INetworkServerService *g_pNetworkServerService;
 extern IGameEventSystem *g_pGameEventSystem;
 
-#endif // _INCLUDE_FKZ_GLOBALS_H_
+#endif // _INCLUDE_FKZ_COMMON_H_

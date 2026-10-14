@@ -4,11 +4,11 @@
  * See database.h.
  */
 
-#include "database.h"
+#include "db/database.h"
 #include "config/config.h"
-#include "cross_chat.h"
-#include "player_manager.h"
-#include "plugin.h"
+#include "chat/cross_chat.h"
+#include "player/player_manager.h"
+#include "fkzapi.h"
 
 #include "utils/log.h"
 #include "utils/sql.h"

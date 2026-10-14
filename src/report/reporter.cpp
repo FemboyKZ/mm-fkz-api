@@ -8,12 +8,12 @@
 #include <cstdio>
 #include <string>
 
-#include "api.h"
+#include "api/api.h"
 #include "config/config.h"
-#include "cs2kz.h"
-#include "json_builder.h"
-#include "plugin.h"
-#include "reporter.h"
+#include "kz/cs2kz.h"
+#include "report/json_builder.h"
+#include "fkzapi.h"
+#include "report/reporter.h"
 
 #include "utils/log.h"
 

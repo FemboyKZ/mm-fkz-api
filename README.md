@@ -1,10 +1,10 @@
-# MM FKZ API Plugin
+# FKZ API
 
 Exposes API endpoint calls as natives, tracks player's/server's realtime status and tracks messages for crosschat.
 
 This is built to work with [FKZ API](https://github.com/FemboyKZ/api)
 
-## Natives
+## API
 
 Other plugins can read the FKZ API through the natives exposed by this plugin.
 Include [`ifkzapi.h`](https://github.com/FemboyKZ/mm-utils/blob/master/interfaces/fkz-api/ifkzapi.h), which lives in [mm-utils](https://github.com/FemboyKZ/mm-utils).
@@ -45,3 +45,7 @@ docker compose run --rm build
 
 - [zer0.k's mm sample plugin fork](https://github.com/zer0k-z/mm_misc_plugins)
 - [cs2kz-metamod](https://github.com/KZGlobalTeam/cs2kz-metamod)
+
+## Contributing
+
+Feel free to create PRs or issues regarding anything, but keep in mind that this is very much just for fkz and I won't spend time adding features I won't use.

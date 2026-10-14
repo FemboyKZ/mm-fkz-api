@@ -18,6 +18,8 @@ public:
 	bool Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late);
 	bool Unload(char *error, size_t maxlen);
 	void AllPluginsLoaded();
+	void OnLevelInit(char const *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame,
+					 bool background) override;
 
 	// Exposes the IFKZApi interface to other Metamod plugins (MetaFactory).
 	void *OnMetamodQuery(const char *iface, int *ret) override;
@@ -85,6 +87,7 @@ private:
 	bool m_serverActive;
 	// One hibernate signal per emptying, both the last disconnect and the hibernation hook report the same one.
 	bool m_hibernateSent;
+	bool m_bSkipLevelInitReload = false;
 
 	KHook::Virtual<ISource2Server, void, bool, bool, bool> m_GameFrame;
 	KHook::Virtual<ISource2Server, void, bool> m_ServerHibernationUpdate;

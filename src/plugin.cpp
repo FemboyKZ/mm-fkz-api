@@ -86,6 +86,7 @@ static void FKZ_ReloadConfig()
 
 bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
+	m_bSkipLevelInitReload = !late;
 	PLUGIN_SAVEVARS();
 
 	mmu::log::Init("FKZ", PLUGIN_NAME);
@@ -144,6 +145,7 @@ bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 
 bool FKZPlugin::Unload(char *error, size_t maxlen)
 {
+	ConVar_Unregister();
 	m_GameFrame.Remove(g_pSource2Server);
 	m_ServerHibernationUpdate.Remove(g_pSource2Server);
 	m_ClientPutInServer.Remove(g_pSource2GameClients);
@@ -208,6 +210,17 @@ CON_COMMAND_F(mm_fkz_version, "Print the plugin version.", FCVAR_GAMEDLL | FCVAR
 
 // Hooks
 
+void FKZPlugin::OnLevelInit(char const *, char const *, char const *, char const *, bool, bool)
+{
+	// Load has just read it for the first map.
+	if (m_bSkipLevelInitReload)
+	{
+		m_bSkipLevelInitReload = false;
+		return;
+	}
+	FKZ_ReloadConfig();
+}
+
 KHook::Return<void> FKZPlugin::Hook_StartupServer(INetworkServerService *, const GameSessionConfiguration_t &config, ISource2WorldSession *,
 												  const char *)
 {
@@ -215,7 +228,6 @@ KHook::Return<void> FKZPlugin::Hook_StartupServer(INetworkServerService *, const
 	m_serverActive = true;
 	m_hibernateSent = false;
 
-	FKZ_ReloadConfig();
 	g_HttpClient.Init();
 	g_ServerInfo.Cache();
 

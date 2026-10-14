@@ -9,8 +9,9 @@
 
 #include "version_gen.h"
 #include <ISmmPlugin.h>
-#include <iserver.h>
-#include <tier1/convar.h>
+#include <engine2/inetworkserverservice.h>
+#include <engine2/networkgameserverbase.h>
+#include <tier0/convar.h>
 
 class FKZPlugin : public ISmmPlugin, public IMetamodListener
 {

@@ -2,9 +2,11 @@
 #define _INCLUDE_FKZ_COMMON_H_
 
 #include <ISmmPlugin.h>
-#include <eiface.h>
+#include <engine2/isource2server.h>
+#include <engine2/ivengineserver2.h>
 #include <igameevents.h>
-#include <iserver.h>
+#include <engine2/inetworkserverservice.h>
+#include <engine2/networkgameserverbase.h>
 
 #define MAXPLAYERS 64
 

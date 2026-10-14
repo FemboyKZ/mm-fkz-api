@@ -28,9 +28,10 @@
 #include "utils/sql.h"
 #include "interfaces/cs2admin/ics2admin.h"
 
-#include <engine/igameeventsystem.h>
+#include <engine2/igameeventsystem.h>
 #include <networksystem/inetworkmessages.h>
 #include <recipientfilter.h>
+#include <shareddefs.h>
 #include <tier0/platform.h>
 
 #include "thirdparty/nlohmann/json.hpp"
@@ -40,8 +41,6 @@
 #define CHAT_DEFAULT "\x01"
 #define CHAT_RED     "\x02"
 #define CHAT_ORCHID  "\x0E"
-
-#define HUD_PRINTTALK 3 // TextMsg destination: the chat area
 
 #define CHAT_RETRY_SECONDS           3.0
 #define CHAT_RETRY_MAX_SECONDS       60.0

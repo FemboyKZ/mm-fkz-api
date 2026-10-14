@@ -10,7 +10,7 @@
 #include "report/server_info.h"
 #include <ISmmAPI.h>
 #include <tier0/platform.h>
-#include <tier1/convar.h>
+#include <tier0/convar.h>
 
 std::string FKZ_JsonEscape(const char *str)
 {

@@ -24,12 +24,14 @@
 
 #include <ISmmAPI.h>
 #include <cstring>
-#include <eiface.h>
-#include <engine/igameeventsystem.h>
+#include <engine2/isource2server.h>
+#include <engine2/ivengineserver2.h>
+#include <engine2/igameeventsystem.h>
 #include <icvar.h>
 #include "interfaces/cs2kz/ics2kz.h"
 #include <inetchannelinfo.h>
-#include <iserver.h>
+#include <engine2/inetworkserverservice.h>
+#include <engine2/networkgameserverbase.h>
 #include <networksystem/inetworkmessages.h>
 #include <tier0/platform.h>
 

@@ -4,7 +4,7 @@
 #include "common.h"
 #include "fkzapi.h"
 #include "utils/log.h"
-#include <tier1/convar.h>
+#include <tier0/convar.h>
 #include <steam/steam_gameserver.h>
 
 ServerInfo g_ServerInfo;

@@ -2,7 +2,7 @@
 #define _INCLUDE_FKZ_CROSS_CHAT_H_
 
 #include <cstdint>
-#include <tier1/convar.h>
+#include <tier0/convar.h>
 
 // Cross-server chat relay for CS2.
 //

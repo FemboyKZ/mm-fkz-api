@@ -30,14 +30,11 @@
 #include <icvar.h>
 #include "interfaces/cs2kz/ics2kz.h"
 #include <inetchannelinfo.h>
+#include <engine2/gamesessionconfiguration.h>
 #include <engine2/inetworkserverservice.h>
 #include <engine2/networkgameserverbase.h>
 #include <networksystem/inetworkmessages.h>
 #include <tier0/platform.h>
-
-class GameSessionConfiguration_t
-{
-};
 
 // The other interfaces in common.h come with the SDK's interfaces lib.
 CGlobalVars *g_pGlobals = nullptr;

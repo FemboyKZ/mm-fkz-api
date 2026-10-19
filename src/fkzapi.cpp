@@ -29,7 +29,6 @@
 #include <engine2/igameeventsystem.h>
 #include <icvar.h>
 #include "interfaces/cs2kz/ics2kz.h"
-#include <inetchannelinfo.h>
 #include <engine2/gamesessionconfiguration.h>
 #include <engine2/inetworkserverservice.h>
 #include <engine2/networkgameserverbase.h>
@@ -50,19 +49,17 @@ PLUGIN_EXPOSE(FKZPlugin, g_ThisPlugin);
 static void AddExistingPlayers()
 {
 	CS2KZ_Refresh();
+	g_PlayerManager.OnLateLoad();
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
-		CPlayerSlot playerSlot(slot);
-		uint64 xuid = g_pEngineServer->GetClientXUID(playerSlot);
-		INetChannelInfo *netInfo = g_pEngineServer->GetPlayerNetInfo(playerSlot);
-		if (xuid == 0 || !netInfo)
+		PlayerInfo *p = g_PlayerManager.Get(slot);
+		if (!p)
 		{
 			continue;
 		}
 		// The engine has no name lookup by slot, cs2kz does. Without it the name fills in on the next connect.
-		const char *name = g_pCS2KZ ? g_pCS2KZ->GetPlayerName(slot) : "";
-		g_PlayerManager.OnClientConnected(slot, name, xuid, netInfo->GetAddress(), false);
-		g_PlayerManager.OnClientPutInServer(slot, name, 0, xuid);
+		p->name = g_pCS2KZ ? g_pCS2KZ->GetPlayerName(slot) : "";
+		p->connectTime = Plat_FloatTime();
 		mmu::cvarquery::OnClientConnected(slot, false);
 		CS2KZ_ResetPlayer(slot);
 	}
@@ -118,7 +115,6 @@ bool FKZPlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, boo
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
 
-	g_PlayerManager.Reset();
 	m_lastReportTime = 0.0;
 	m_serverActive = false;
 	m_hibernateSent = false;
@@ -264,7 +260,7 @@ KHook::Return<void> FKZPlugin::Hook_OnClientConnected(ISource2GameClients *, CPl
 
 KHook::Return<void> FKZPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
-	g_PlayerManager.OnClientPutInServer(slot.Get(), pszName, type, xuid);
+	g_PlayerManager.OnClientPutInServer(slot.Get());
 	CS2KZ_ResetPlayer(slot.Get());
 
 	// Load saved cross-chat state once the player has a real steamID.
@@ -285,8 +281,8 @@ KHook::Return<void> FKZPlugin::Hook_ClientDisconnect(ISource2GameClients *, CPla
 													 uint64 xuid, const char *pszNetworkID)
 {
 	int s = slot.Get();
-	const PlayerInfo &player = g_PlayerManager.GetPlayer(s);
-	bool wasInGame = player.connected && player.inGame && !player.isBot;
+	const PlayerInfo *player = g_PlayerManager.Get(s);
+	bool wasInGame = player && player->inGame && !player->fakePlayer;
 
 	// The slot is cleared right below, so whatever this player accrued since the last report has to go out first.
 	if (wasInGame && !g_FKZConfig.apiUrl.empty())

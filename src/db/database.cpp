@@ -58,10 +58,10 @@ static void OnSchemaSettled(ISQLQuery * /*q*/)
 	// Anyone put in server before now, on a late load or ahead of a slow connect, had their prefs load skipped.
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
-		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-		if (p.connected && p.inGame && !p.isBot)
+		const PlayerInfo *p = g_PlayerManager.Get(slot);
+		if (p && p->inGame && !p->fakePlayer)
 		{
-			FKZ_CrossChat_LoadPrefs(slot, p.steamId64);
+			FKZ_CrossChat_LoadPrefs(slot, p->steamid64);
 		}
 	}
 }

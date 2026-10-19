@@ -22,6 +22,7 @@
 #include "player/player_manager.h"
 #include "fkzapi.h"
 
+#include "game/say.h"
 #include "utils/log.h"
 
 #include "interfaces/sql_mm/sql_mm.h"
@@ -123,8 +124,8 @@ static void PrintCrossChat(const char *rawAlias, const char *rawName, const char
 	// One line per player, the tag is in their language.
 	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
-		const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-		if (!p.connected || !p.inGame || p.isBot || g_muted[slot])
+		const PlayerInfo *p = g_PlayerManager.Get(slot);
+		if (!p || !p->inGame || p->fakePlayer || g_muted[slot])
 		{
 			continue;
 		}
@@ -174,8 +175,8 @@ static void SavePref(int slot)
 	{
 		return;
 	}
-	const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-	if (!p.connected || p.isBot || p.steamId64 == 0)
+	const PlayerInfo *p = g_PlayerManager.Get(slot);
+	if (!p || p->fakePlayer || p->steamid64 == 0)
 	{
 		return;
 	}
@@ -187,7 +188,7 @@ static void SavePref(int slot)
 		snprintf(query, sizeof(query),
 				 "INSERT INTO %s (steamid, crosschat_muted) VALUES "
 				 "(%llu, %d) ON DUPLICATE KEY UPDATE crosschat_muted = %d;",
-				 Database_PrefsTable(), (unsigned long long)p.steamId64, muted, muted);
+				 Database_PrefsTable(), (unsigned long long)p->steamid64, muted, muted);
 	}
 	else
 	{
@@ -195,7 +196,7 @@ static void SavePref(int slot)
 				 "INSERT INTO %s (steamid, crosschat_muted) VALUES "
 				 "(%llu, %d) ON CONFLICT(steamid) DO UPDATE SET crosschat_muted = "
 				 "%d;",
-				 Database_PrefsTable(), (unsigned long long)p.steamId64, muted, muted);
+				 Database_PrefsTable(), (unsigned long long)p->steamid64, muted, muted);
 	}
 
 	Database_GetConnection().Query(query, nullptr);
@@ -215,8 +216,8 @@ void FKZ_CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 								   [slot, steamId64](ISQLQuery *q)
 								   {
 									   // The slot may have been recycled before this async result arrived.
-									   const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
-									   if (!q || !p.connected || p.steamId64 != steamId64)
+									   const PlayerInfo *p = g_PlayerManager.Get(slot);
+									   if (!q || !p || p->steamid64 != steamId64)
 									   {
 										   return;
 									   }
@@ -238,26 +239,22 @@ static void OnChatPost(bool /*success*/, int statusCode, const char * /*body*/, 
 
 bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	if (g_FKZConfig.apiUrl.empty() || !cmd.IsValidRef())
+	if (g_FKZConfig.apiUrl.empty())
 	{
 		return false;
 	}
 
 	// Public chat only; team chat stays local.
-	if (V_stricmp(cmd.GetName(), "say") != 0 || args.ArgC() < 2)
+	bool team = false;
+	int slot = mmu::SaySlot(cmd, ctx, &team);
+	if (slot < 0 || team || args.ArgC() < 2)
 	{
 		return false;
 	}
 
-	int slot = ctx.GetPlayerSlot().Get();
-	if (!mmu::ValidSlot(slot))
-	{
-		return false;
-	}
-
-	const PlayerInfo &p = g_PlayerManager.GetPlayer(slot);
+	const PlayerInfo *p = g_PlayerManager.Get(slot);
 	// Not put in server yet means not a legitimate chat line, the same check cs2admin blocks on.
-	if (!p.connected || !p.inGame || p.isBot)
+	if (!p || !p->inGame || p->fakePlayer)
 	{
 		return false;
 	}
@@ -339,10 +336,10 @@ bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext
 	FKZ_ResolveIpPort(ip, sizeof(ip), port);
 
 	char steamId[32];
-	snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p.steamId64);
+	snprintf(steamId, sizeof(steamId), "%llu", (unsigned long long)p->steamid64);
 
 	std::string body = "{\"ip\":\"" + FKZ_JsonEscape(ip) + "\",\"port\":" + std::to_string(port) + ",\"steamid\":\"" + steamId + "\",\"name\":\""
-					   + FKZ_JsonEscape(p.name) + "\",\"message\":\"" + FKZ_JsonEscape(text.c_str())
+					   + FKZ_JsonEscape(p->name.c_str()) + "\",\"message\":\"" + FKZ_JsonEscape(text.c_str())
 					   + "\",\"muted\":" + (g_muted[slot] ? "true" : "false") + "}";
 
 	std::string url = g_FKZConfig.apiUrl + "/chat/messages";

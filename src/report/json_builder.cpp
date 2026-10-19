@@ -63,8 +63,8 @@ std::string FKZ_JsonEscape(const char *str)
 
 bool FKZ_IsReportedPlayer(int slot)
 {
-	const PlayerInfo &player = g_PlayerManager.GetPlayer(slot);
-	return player.connected && player.inGame && !player.isBot && g_pEngineServer->IsClientFullyAuthenticated(CPlayerSlot(slot));
+	const PlayerInfo *player = g_PlayerManager.Get(slot);
+	return player && player->inGame && !player->fakePlayer && g_pEngineServer->IsClientFullyAuthenticated(CPlayerSlot(slot));
 }
 
 // Enumerates loaded Metamod plugins for the report's plugins[] array.
@@ -220,7 +220,7 @@ std::string FKZ_BuildPayloadJson()
 
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		const PlayerInfo &player = g_PlayerManager.GetPlayer(i);
+		const PlayerInfo *player = g_PlayerManager.Get(i);
 		if (!FKZ_IsReportedPlayer(i))
 		{
 			continue;
@@ -233,24 +233,24 @@ std::string FKZ_BuildPayloadJson()
 		firstPlayer = false;
 
 		char steamIdStr[32];
-		snprintf(steamIdStr, sizeof(steamIdStr), "%llu", (unsigned long long)player.steamId64);
+		snprintf(steamIdStr, sizeof(steamIdStr), "%llu", (unsigned long long)player->steamid64);
 
 		double timeOnServer = 0.0;
-		if (player.connectTime > 0.0)
+		if (player->connectTime > 0.0)
 		{
-			timeOnServer = now - player.connectTime;
+			timeOnServer = now - player->connectTime;
 		}
 
 		json += "{";
 		json += "\"steamid\":\"" + std::string(steamIdStr) + "\",";
-		json += "\"name\":\"" + FKZ_JsonEscape(player.name) + "\",";
-		json += "\"ip\":\"" + FKZ_JsonEscape(player.ipAddress) + "\",";
+		json += "\"name\":\"" + FKZ_JsonEscape(player->name.c_str()) + "\",";
+		json += "\"ip\":\"" + FKZ_JsonEscape(player->ip.c_str()) + "\",";
 
 		char timeBuf[32];
 		snprintf(timeBuf, sizeof(timeBuf), "%.1f", timeOnServer);
 		json += "\"time_on_server\":" + std::string(timeBuf) + ",";
 
-		json += std::string("\"in_game\":") + (player.inGame ? "true" : "false") + ",";
+		json += std::string("\"in_game\":") + (player->inGame ? "true" : "false") + ",";
 		json += "\"cs2kz\":" + BuildCS2KZJson(i) + ",";
 		json += "\"playtime_modes\":" + FKZ_BuildPlaytimeModesJson(i);
 		json += "}";

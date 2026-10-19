@@ -139,8 +139,8 @@ void CS2KZ_SampleAll()
 	double now = Plat_FloatTime();
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		const PlayerInfo &player = g_PlayerManager.GetPlayer(i);
-		if (player.connected && player.inGame && !player.isBot)
+		const PlayerInfo *player = g_PlayerManager.Get(i);
+		if (player && player->inGame && !player->fakePlayer)
 		{
 			SamplePlayer(i, now);
 		}

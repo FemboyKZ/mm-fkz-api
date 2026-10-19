@@ -203,7 +203,7 @@ static void SavePref(int slot)
 
 void FKZ_CrossChat_LoadPrefs(int slot, uint64_t steamId64)
 {
-	if (!FKZ_Database_IsReady() || slot < 0 || slot >= MAXPLAYERS || steamId64 == 0)
+	if (!FKZ_Database_IsReady() || !mmu::ValidSlot(slot) || steamId64 == 0)
 	{
 		return;
 	}
@@ -250,7 +250,7 @@ bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext
 	}
 
 	int slot = ctx.GetPlayerSlot().Get();
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return false;
 	}
@@ -481,7 +481,7 @@ void FKZ_CrossChat_Tick(bool hasHumans)
 
 void FKZ_CrossChat_OnClientDisconnect(int slot)
 {
-	if (slot >= 0 && slot <= MAXPLAYERS)
+	if (mmu::ValidSlot(slot))
 	{
 		g_muted[slot] = false;
 	}

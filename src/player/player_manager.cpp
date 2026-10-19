@@ -17,7 +17,7 @@ void PlayerManager::ResetPlayer(int slot)
 
 void PlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid, const char *address, bool fakePlayer)
 {
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -48,7 +48,7 @@ void PlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid,
 
 void PlayerManager::OnClientPutInServer(int slot, const char *name, int type, uint64_t xuid)
 {
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -73,7 +73,7 @@ void PlayerManager::OnClientPutInServer(int slot, const char *name, int type, ui
 
 void PlayerManager::OnClientDisconnect(int slot)
 {
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}

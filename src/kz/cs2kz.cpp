@@ -78,7 +78,7 @@ void CS2KZ_Refresh()
 
 void CS2KZ_ResetPlayer(int slot)
 {
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -202,7 +202,7 @@ void CS2KZ_OnReportResult(int reportId, bool accepted)
 
 bool CS2KZ_HasPendingPlaytime(int slot)
 {
-	if (slot < 0 || slot >= MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return false;
 	}
@@ -260,7 +260,7 @@ std::string FKZ_BuildPlaytimeModesJson(int slot)
 
 		json += std::string("\"") + s_modeApiKeys[m] + "\":";
 
-		double seconds = (slot >= 0 && slot < MAXPLAYERS) ? s_playtime[slot].seconds[m] : 0.0;
+		double seconds = (mmu::ValidSlot(slot)) ? s_playtime[slot].seconds[m] : 0.0;
 		if (seconds > 0.0)
 		{
 			char buf[32];

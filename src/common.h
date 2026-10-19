@@ -8,7 +8,7 @@
 #include <engine2/inetworkserverservice.h>
 #include <engine2/networkgameserverbase.h>
 
-#define MAXPLAYERS 64
+#include "sdk/plugin_globals.h"
 
 class IGameEventSystem;
 

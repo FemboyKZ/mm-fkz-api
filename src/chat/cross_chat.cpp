@@ -35,7 +35,7 @@
 #include <shareddefs.h>
 #include <tier0/platform.h>
 
-#include "thirdparty/nlohmann/json.hpp"
+#include "utils/json_doc.h"
 #include "usermessages.pb.h"
 
 // CS2 chat color control bytes (from cs2kz's color table).
@@ -347,26 +347,6 @@ bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext
 	return false;
 }
 
-// nlohmann's value() throws when the key is present with another type, and the Linux build is compiled without exceptions,
-// so a null field in the reply would abort the server. Every field is type checked instead.
-static std::string JsonString(const nlohmann::json &obj, const char *key)
-{
-	auto it = obj.find(key);
-	return (it != obj.end() && it->is_string()) ? it->get<std::string>() : std::string();
-}
-
-static int JsonInt(const nlohmann::json &obj, const char *key, int fallback)
-{
-	auto it = obj.find(key);
-	return (it != obj.end() && it->is_number_integer()) ? it->get<int>() : fallback;
-}
-
-static bool JsonBool(const nlohmann::json &obj, const char *key, bool fallback)
-{
-	auto it = obj.find(key);
-	return (it != obj.end() && it->is_boolean()) ? it->get<bool>() : fallback;
-}
-
 // Doubles with every failure in a row, a dead API is otherwise asked every few seconds for as long as players are on.
 static void RetryStreamLater()
 {
@@ -412,7 +392,7 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 
 		// Trust the server's cursor (only one poll is ever in flight, so replies arrive in order).
 		// Adopting it unconditionally lets us recover if the API restarted and reset its cursor below ours.
-		g_chatCursor = JsonInt(doc, "cursor", g_chatCursor);
+		g_chatCursor = mmu::json::IntField(doc, "cursor", g_chatCursor);
 
 		auto msgs = doc.find("messages");
 		if (msgs != doc.end() && msgs->is_array())
@@ -423,10 +403,10 @@ static void OnChatStream(bool /*success*/, int statusCode, const char *body, uin
 				{
 					continue;
 				}
-				std::string alias = JsonString(m, "alias");
-				std::string name = JsonString(m, "name");
-				std::string message = JsonString(m, "message");
-				PrintCrossChat(alias.c_str(), name.c_str(), message.c_str(), JsonBool(m, "muted", false));
+				std::string alias = mmu::json::StringField(m, "alias");
+				std::string name = mmu::json::StringField(m, "name");
+				std::string message = mmu::json::StringField(m, "message");
+				PrintCrossChat(alias.c_str(), name.c_str(), message.c_str(), mmu::json::BoolField(m, "muted", false));
 			}
 		}
 	}

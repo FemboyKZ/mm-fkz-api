@@ -184,11 +184,13 @@ void FKZPlugin::AllPluginsLoaded()
 void FKZPlugin::OnPluginLoad(PluginId /*id*/)
 {
 	CS2KZ_Refresh();
+	FKZ_Database_Refresh();
 }
 
 void FKZPlugin::OnPluginUnload(PluginId id)
 {
 	CS2KZ_Refresh();
+	FKZ_Database_Refresh();
 	g_FKZApi.DropOwnedBy(id);
 }
 

@@ -22,6 +22,8 @@ void FKZ_Database_Cleanup();
 // Tries a failed connect or schema again. Call once per game frame.
 void FKZ_Database_RunFrame();
 
+void FKZ_Database_Refresh();
+
 // True once connected and the schema exists.
 bool FKZ_Database_IsReady();
 

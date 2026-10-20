@@ -103,6 +103,11 @@ void FKZ_Database_RunFrame()
 	}
 }
 
+void FKZ_Database_Refresh()
+{
+	g_db.Refresh();
+}
+
 void FKZ_Database_Cleanup()
 {
 	g_dbReady = false;

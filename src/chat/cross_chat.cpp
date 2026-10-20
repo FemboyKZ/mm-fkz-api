@@ -351,7 +351,7 @@ bool FKZ_CrossChat_OnDispatchConCommand(ConCommandRef cmd, const CCommandContext
 static void RetryStreamLater()
 {
 	g_nextRetryTime = Plat_FloatTime() + g_retryDelay;
-	g_retryDelay = (std::min)(g_retryDelay * 2.0, CHAT_RETRY_MAX_SECONDS);
+	g_retryDelay = std::min(g_retryDelay * 2.0, CHAT_RETRY_MAX_SECONDS);
 }
 
 static void OnChatStream(bool /*success*/, int statusCode, const char *body, uint32 /*len*/, void *data)

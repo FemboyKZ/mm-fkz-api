@@ -10,6 +10,7 @@
 #include "version_gen.h"
 #include <ISmmPlugin.h>
 #include <engine2/inetworkserverservice.h>
+#include <engine2/isource2server.h>
 #include <engine2/networkgameserverbase.h>
 #include <tier0/convar.h>
 
@@ -33,7 +34,7 @@ public:
 
 	// KHook callbacks
 	KHook::Return<void> Hook_GameFrame(ISource2Server *, bool simulating, bool bFirstTick, bool bLastTick);
-	KHook::Return<void> Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
+	KHook::Return<void> Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type, uint64 xuid);
 	KHook::Return<void> Hook_ClientDisconnect(ISource2GameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
 											  uint64 xuid, const char *pszNetworkID);
 	KHook::Return<void> Hook_OnClientConnected(ISource2GameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID,
@@ -92,7 +93,7 @@ private:
 
 	KHook::Virtual<ISource2Server, void, bool, bool, bool> m_GameFrame;
 	KHook::Virtual<ISource2Server, void, bool> m_ServerHibernationUpdate;
-	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, char const *, int, uint64> m_ClientPutInServer;
+	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, char const *, ClientPutInServerType_t, uint64> m_ClientPutInServer;
 	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64, const char *> m_ClientDisconnect;
 	KHook::Virtual<ISource2GameClients, void, CPlayerSlot, const char *, uint64, const char *, const char *, bool> m_OnClientConnected;
 	KHook::Virtual<INetworkServerService, void, const GameSessionConfiguration_t &, ISource2WorldSession *, const char *> m_StartupServer;

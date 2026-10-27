@@ -260,18 +260,18 @@ KHook::Return<void> FKZPlugin::Hook_OnClientConnected(ISource2GameClients *, CPl
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> FKZPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+KHook::Return<void> FKZPlugin::Hook_ClientPutInServer(ISource2GameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type, uint64 xuid)
 {
 	g_PlayerManager.OnClientPutInServer(slot.Get());
 	CS2KZ_ResetPlayer(slot.Get());
 
 	// Load saved cross-chat state once the player has a real steamID.
-	if (type != 1)
+	if (type != CLIENT_PUT_IN_SERVER_FAKE_PLAYER)
 	{
 		FKZ_CrossChat_LoadPrefs(slot.Get(), xuid);
 	}
 
-	if (type != 1 && !g_FKZConfig.apiUrl.empty() && g_PlayerManager.GetHumanPlayerCount() == 1)
+	if (type != CLIENT_PUT_IN_SERVER_FAKE_PLAYER && !g_FKZConfig.apiUrl.empty() && g_PlayerManager.GetHumanPlayerCount() == 1)
 	{
 		m_lastReportTime = 0.0;
 		m_hibernateSent = false;

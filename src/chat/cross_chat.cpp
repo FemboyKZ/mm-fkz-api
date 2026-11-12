@@ -68,7 +68,7 @@ static void SendChatLine(const CRecipientFilter &filter, const char *line)
 		return;
 	}
 
-	INetworkMessageInternal *netmsg = g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
+	NetMessageInfo_t *netmsg = g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
 	if (!netmsg)
 	{
 		return;
@@ -88,10 +88,8 @@ static void SendChatLine(const CRecipientFilter &filter, const char *line)
 	msg->add_param("");
 	msg->add_param("");
 
-	// AllocateMessage hands back a pool allocated message, not a new'd object.
-	// It has to go back through DeallocateNetMessageAbstract. delete frees the wrong way and corrupts the heap.
 	g_pGameEventSystem->PostEventAbstract(0, false, const_cast<CRecipientFilter *>(&filter), netmsg, data, 0);
-	g_pNetworkMessages->DeallocateNetMessageAbstract(netmsg, data);
+	delete data;
 }
 
 // Chat color codes are the bytes 0x01-0x10, a range that also covers newlines.
